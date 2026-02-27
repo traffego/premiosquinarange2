@@ -721,6 +721,47 @@ echo '<style>' .
                             Os números dentro deste intervalo serão bloqueados para compra online e reservados para venda presencial.
                         </p>
                     </div>
+
+                    <?php if (isset($id) && isset($cotas_rua_inicio) && !empty($cotas_rua_inicio) && isset($cotas_rua_fim) && !empty($cotas_rua_fim) && (int)$cotas_rua_fim >= (int)$cotas_rua_inicio): ?>
+                    <div class="mt-6" id="lista-cotas-rua">
+                        <hr class="mb-4 border-gray-300 dark:border-gray-600">
+                        <p class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            📋 Cotas reservadas para a rua
+                            <span style="font-weight:normal; color:#a0aec0; font-size:12px; margin-left:6px;">
+                                (<?= (int)$cotas_rua_fim - (int)$cotas_rua_inicio + 1 ?> números · intervalo <?= (int)$cotas_rua_inicio ?> → <?= (int)$cotas_rua_fim ?>)
+                            </span>
+                        </p>
+                        <div style="
+                            display: flex;
+                            flex-wrap: wrap;
+                            gap: 6px;
+                            max-height: 320px;
+                            overflow-y: auto;
+                            padding: 12px;
+                            background: rgba(0,0,0,0.04);
+                            border-radius: 8px;
+                            border: 1px solid #e2e8f0;
+                        " class="dark:border-gray-600">
+                            <?php
+                            $pad = strlen((string)$qty_numbers);
+                            for ($rua = (int)$cotas_rua_inicio; $rua <= (int)$cotas_rua_fim; $rua++):
+                                $num = str_pad($rua, $pad, '0', STR_PAD_LEFT);
+                            ?>
+                            <span style="
+                                display: inline-block;
+                                background: #7e3af2;
+                                color: #fff;
+                                border-radius: 6px;
+                                padding: 4px 10px;
+                                font-size: 12px;
+                                font-family: monospace;
+                                font-weight: 600;
+                                letter-spacing: 0.5px;
+                            "><?= htmlspecialchars($num) ?></span>
+                            <?php endfor; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <div style="margin-top:20px;">
