@@ -678,90 +678,200 @@ echo '<style>' .
 
                 <div id="tab8" class="tabcontent text-gray-700 dark:text-gray-400 hidden">
                     <?php
-                    $cotas_rua_disabled = '';
-                    $cotas_rua_aviso = '';
-                    if (isset($id) && ((int)(isset($pending_numbers) ? $pending_numbers : 0) + (int)(isset($paid_numbers) ? $paid_numbers : 0)) > 0) {
-                        $cotas_rua_disabled = 'disabled';
-                        $cotas_rua_aviso = '<p style="color: #f44336; font-style: italic; font-size: 13px; margin-top: 8px;">⚠️ Não é possível alterar as cotas de rua após o início das vendas.</p>';
+                    // Decodificar os ranges salvos
+                    $_saved_ranges = [];
+                    if (isset($cotas_rua_ranges) && !empty($cotas_rua_ranges)) {
+                        $_decoded_save = json_decode($cotas_rua_ranges, true);
+                        if (is_array($_decoded_save)) {
+                            $_saved_ranges = $_decoded_save;
+                        }
                     }
+                    // Fallback para range legado
+                    if (empty($_saved_ranges) && isset($cotas_rua_inicio) && !empty($cotas_rua_inicio) && isset($cotas_rua_fim) && !empty($cotas_rua_fim)) {
+                        $_saved_ranges = [['inicio' => (int)$cotas_rua_inicio, 'fim' => (int)$cotas_rua_fim]];
+                    }
+                    $pad = isset($qty_numbers) ? strlen((string)$qty_numbers) : 1;
                     ?>
+
                     <label class="block mt-4 text-sm">
-                        <span class="text-gray-700 dark:text-gray-400">Habilitar cotas de rua (venda presencial)?</span>
+                        <span class="text-gray-700 dark:text-gray-400 font-semibold">Sequências reservadas para a rua (venda presencial)</span>
+                        <p style="font-size:13px;color:orange;font-style:italic;margin-top:4px;">Os números dentro dos intervalos abaixo serão bloqueados para compra online.</p>
                     </label>
-                    <div class="can-toggle" style="margin-top:4px">
-                        <input type="checkbox" name="enable_cotas_rua" id="enable_cotas_rua"
-                            <?= isset($cotas_rua_inicio) && !empty($cotas_rua_inicio) ? 'checked' : '' ?>
-                            <?= $cotas_rua_disabled ?>>
-                        <label for="enable_cotas_rua">
-                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
-                        </label>
-                    </div>
-                    <?= $cotas_rua_aviso ?>
 
-                    <div class="cotas-rua-fields" style="<?= (isset($cotas_rua_inicio) && !empty($cotas_rua_inicio)) ? '' : 'display:none;' ?>">
-                        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-2 mt-4">
-                            <label class="block text-sm">
-                                <span class="text-gray-700 dark:text-gray-400">Número inicial</span>
-                                <input type="number" name="cotas_rua_inicio" id="cotas_rua_inicio"
-                                    class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input"
-                                    placeholder="Ex: 500" min="0"
-                                    value="<?= isset($cotas_rua_inicio) ? $cotas_rua_inicio : '' ?>"
-                                    <?= $cotas_rua_disabled ?> />
-                            </label>
-                            <label class="block text-sm">
-                                <span class="text-gray-700 dark:text-gray-400">Número final</span>
-                                <input type="number" name="cotas_rua_fim" id="cotas_rua_fim"
-                                    class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input"
-                                    placeholder="Ex: 999" min="0"
-                                    value="<?= isset($cotas_rua_fim) ? $cotas_rua_fim : '' ?>"
-                                    <?= $cotas_rua_disabled ?> />
-                            </label>
+                    <!-- Hidden field that stores all ranges as JSON -->
+                    <input type="hidden" name="cotas_rua_ranges_json" id="cotas_rua_ranges_json" value="<?= htmlspecialchars(json_encode($_saved_ranges)) ?>">
+                    <!-- Legacy compat fields (kept hidden, populated by JS from first range) -->
+                    <input type="hidden" name="cotas_rua_inicio" id="cotas_rua_inicio_hidden" value="<?= !empty($_saved_ranges) ? (int)$_saved_ranges[0]['inicio'] : '' ?>">
+                    <input type="hidden" name="cotas_rua_fim" id="cotas_rua_fim_hidden" value="<?= !empty($_saved_ranges) ? (int)$_saved_ranges[0]['fim'] : '' ?>">
+
+                    <!-- Ranges list -->
+                    <div id="rua-ranges-list" class="mt-3" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+                    <div class="mt-3">
+                        <button type="button" id="btn-add-range" class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none">
+                            + Adicionar sequência
+                        </button>
+                    </div>
+
+                    <!-- Confirmação modal -->
+                    <div id="modal-rua-confirmacao" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+                        <div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+                            <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">⚠️ Atenção</p>
+                            <p id="modal-rua-msg" style="font-size:14px;color:#555;margin-bottom:18px;"></p>
+                            <div style="display:flex;gap:10px;">
+                                <button id="btn-rua-confirmar" type="button" style="flex:1;padding:10px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Reservar mesmo assim</button>
+                                <button id="btn-rua-cancelar" type="button" style="flex:1;padding:10px;background:#e2e8f0;color:#333;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Cancelar</button>
+                            </div>
                         </div>
-                        <p style="font-size: 13px; color: orange; font-style: italic; margin-top: 8px;">
-                            Os números dentro deste intervalo serão bloqueados para compra online e reservados para venda presencial.
-                        </p>
                     </div>
 
-                    <?php if (isset($id) && isset($cotas_rua_inicio) && !empty($cotas_rua_inicio) && isset($cotas_rua_fim) && !empty($cotas_rua_fim) && (int)$cotas_rua_fim >= (int)$cotas_rua_inicio): ?>
-                    <div class="mt-6" id="lista-cotas-rua">
+                    <!-- Lista de cotas reservadas com badges coloridos -->
+                    <div id="lista-cotas-rua-wrap" class="mt-6" style="display:none;">
                         <hr class="mb-4 border-gray-300 dark:border-gray-600">
-                        <p class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            📋 Cotas reservadas para a rua
-                            <span style="font-weight:normal; color:#a0aec0; font-size:12px; margin-left:6px;">
-                                (<?= (int)$cotas_rua_fim - (int)$cotas_rua_inicio + 1 ?> números · intervalo <?= (int)$cotas_rua_inicio ?> → <?= (int)$cotas_rua_fim ?>)
-                            </span>
+                        <p class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">📋 Números reservados</p>
+                        <div id="lista-cotas-rua-badges" style="display:flex;flex-wrap:wrap;gap:6px;max-height:320px;overflow-y:auto;padding:12px;background:rgba(0,0,0,0.04);border-radius:8px;border:1px solid #e2e8f0;"></div>
+                        <p class="mt-2" style="font-size:11px;color:#a0aec0;">
+                            <span style="display:inline-block;width:12px;height:12px;background:#7e3af2;border-radius:3px;margin-right:4px;"></span>Livre para a rua &nbsp;
+                            <span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:3px;margin-right:4px;margin-left:8px;"></span>Já comprado online
                         </p>
-                        <div style="
-                            display: flex;
-                            flex-wrap: wrap;
-                            gap: 6px;
-                            max-height: 320px;
-                            overflow-y: auto;
-                            padding: 12px;
-                            background: rgba(0,0,0,0.04);
-                            border-radius: 8px;
-                            border: 1px solid #e2e8f0;
-                        " class="dark:border-gray-600">
-                            <?php
-                            $pad = strlen((string)$qty_numbers);
-                            for ($rua = (int)$cotas_rua_inicio; $rua <= (int)$cotas_rua_fim; $rua++):
-                                $num = str_pad($rua, $pad, '0', STR_PAD_LEFT);
-                            ?>
-                            <span style="
-                                display: inline-block;
-                                background: #7e3af2;
-                                color: #fff;
-                                border-radius: 6px;
-                                padding: 4px 10px;
-                                font-size: 12px;
-                                font-family: monospace;
-                                font-weight: 600;
-                                letter-spacing: 0.5px;
-                            "><?= htmlspecialchars($num) ?></span>
-                            <?php endfor; ?>
-                        </div>
                     </div>
-                    <?php endif; ?>
+
+                    <script>
+                    (function() {
+                        var productId = '<?= isset($id) ? (int)$id : 0 ?>';
+                        var qtyNumbers = <?= isset($qty_numbers) ? (int)$qty_numbers : 1 ?>;
+                        var pad = <?= $pad ?>;
+                        var ranges = <?= json_encode($_saved_ranges) ?>;
+
+                        // Números já comprados (pending+paid) no produto
+                        var boughtNumbers = {};
+                        <?php
+                        if (isset($id) && $id) {
+                            $rua_orders = $conn->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "'");
+                            $allBought = [];
+                            while ($rua_row = $rua_orders->fetch_assoc()) {
+                                $parts = array_filter(explode(',', $rua_row['order_numbers']));
+                                foreach ($parts as $p) { $allBought[] = trim($p); }
+                            }
+                            echo 'boughtNumbers = ' . json_encode(array_fill_keys($allBought, true)) . ';';
+                        }
+                        ?>
+
+                        function padNum(n) {
+                            return String(n).padStart(pad, '0');
+                        }
+
+                        function syncHiddenField() {
+                            document.getElementById('cotas_rua_ranges_json').value = JSON.stringify(ranges);
+                            // Legacy compat
+                            if (ranges.length > 0) {
+                                document.getElementById('cotas_rua_inicio_hidden').value = ranges[0].inicio;
+                                document.getElementById('cotas_rua_fim_hidden').value = ranges[0].fim;
+                            } else {
+                                document.getElementById('cotas_rua_inicio_hidden').value = '';
+                                document.getElementById('cotas_rua_fim_hidden').value = '';
+                            }
+                        }
+
+                        function renderBadges() {
+                            var wrap = document.getElementById('lista-cotas-rua-wrap');
+                            var cont = document.getElementById('lista-cotas-rua-badges');
+                            cont.innerHTML = '';
+                            if (ranges.length === 0) { wrap.style.display = 'none'; return; }
+                            wrap.style.display = 'block';
+                            ranges.forEach(function(r) {
+                                for (var n = r.inicio; n <= r.fim; n++) {
+                                    var num = padNum(n);
+                                    var isBought = boughtNumbers.hasOwnProperty(num);
+                                    var span = document.createElement('span');
+                                    span.textContent = num;
+                                    span.style.cssText = 'display:inline-block;border-radius:6px;padding:4px 10px;font-size:12px;font-family:monospace;font-weight:600;letter-spacing:0.5px;color:#fff;background:' + (isBought ? '#ef4444' : '#7e3af2') + ';';
+                                    if (isBought) { span.title = 'Já comprado online'; }
+                                    cont.appendChild(span);
+                                }
+                            });
+                        }
+
+                        function renderRanges() {
+                            var list = document.getElementById('rua-ranges-list');
+                            list.innerHTML = '';
+                            ranges.forEach(function(r, idx) {
+                                var row = document.createElement('div');
+                                row.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+                                row.innerHTML = '<label style="font-size:13px;color:#718096;">Sequência ' + (idx+1) + '</label>' +
+                                    '<input type="number" min="0" placeholder="Início" value="' + r.inicio + '" style="width:120px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="inicio">' +
+                                    '<span style="color:#a0aec0;">→</span>' +
+                                    '<input type="number" min="0" placeholder="Fim" value="' + r.fim + '" style="width:120px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="fim">';
+                                if (ranges.length > 1) {
+                                    var del = document.createElement('button');
+                                    del.type = 'button';
+                                    del.textContent = '✕ Remover';
+                                    del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;';
+                                    del.addEventListener('click', function() {
+                                        ranges.splice(idx, 1);
+                                        syncHiddenField();
+                                        renderRanges();
+                                        renderBadges();
+                                    });
+                                    row.appendChild(del);
+                                }
+                                row.querySelectorAll('input').forEach(function(inp) {
+                                    inp.addEventListener('change', function() {
+                                        var i = parseInt(this.dataset.idx);
+                                        ranges[i][this.dataset.field] = parseInt(this.value) || 0;
+                                        syncHiddenField();
+                                        renderBadges();
+                                    });
+                                });
+                                list.appendChild(row);
+                            });
+                        }
+
+                        document.getElementById('btn-add-range').addEventListener('click', function() {
+                            ranges.push({ inicio: 0, fim: 0 });
+                            syncHiddenField();
+                            renderRanges();
+                        });
+
+                        // Interceptar o form submit para checar confirmação
+                        var _pendingConfirm = false;
+                        var _formTarget = null;
+                        document.getElementById('product-form').addEventListener('submit', function(e) {
+                            if (_pendingConfirm || productId == 0) return;
+                            // Verificar se algum número comprado está dentro dos ranges
+                            var boughtInRange = [];
+                            ranges.forEach(function(r) {
+                                for (var n = r.inicio; n <= r.fim; n++) {
+                                    var num = padNum(n);
+                                    if (boughtNumbers.hasOwnProperty(num)) boughtInRange.push(num);
+                                }
+                            });
+                            if (boughtInRange.length > 0) {
+                                e.preventDefault();
+                                _formTarget = this;
+                                var modal = document.getElementById('modal-rua-confirmacao');
+                                document.getElementById('modal-rua-msg').innerHTML =
+                                    'Existem <strong>' + boughtInRange.length + ' número(s)</strong> dentro das sequências configuradas que já foram comprados online.' +
+                                    '<br><br>Mesmo assim, todos os números das sequências estarão protegidos: os já comprados continuarão pertencendo ao comprador, e os demais ficam reservados para a rua.';
+                                modal.style.display = 'flex';
+                            }
+                        });
+
+                        document.getElementById('btn-rua-confirmar').addEventListener('click', function() {
+                            document.getElementById('modal-rua-confirmacao').style.display = 'none';
+                            _pendingConfirm = true;
+                            if (_formTarget) _formTarget.submit();
+                        });
+                        document.getElementById('btn-rua-cancelar').addEventListener('click', function() {
+                            document.getElementById('modal-rua-confirmacao').style.display = 'none';
+                        });
+
+                        // Init
+                        if (ranges.length === 0) ranges.push({ inicio: 0, fim: 0 });
+                        renderRanges();
+                        renderBadges();
+                    })();
+                    </script>
                 </div>
 
                 <div style="margin-top:20px;">

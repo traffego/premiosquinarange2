@@ -2,14 +2,26 @@
 
 $paid_and_pending = $pending_numbers + $paid_numbers;
 $cotas_rua_qty = 0;
-$cotas_rua_liberadas_list = isset($cotas_rua_liberadas) ? (json_decode($cotas_rua_liberadas, true) ?: []) : [];
-if (!empty($cotas_rua_inicio) && !empty($cotas_rua_fim)) {
-    $cotas_rua_qty = ((int)$cotas_rua_fim - (int)$cotas_rua_inicio) + 1 - count($cotas_rua_liberadas_list);
-    if ($cotas_rua_qty < 0)
-        $cotas_rua_qty = 0;
+// Suporta múltiplos ranges (cotas_rua_ranges) com fallback para legado
+$_rua_ranges_json = isset($cotas_rua_ranges) ? $cotas_rua_ranges : '';
+$_rua_ranges = [];
+if (!empty($_rua_ranges_json)) {
+    $_decoded = json_decode($_rua_ranges_json, true);
+    if (is_array($_decoded) && count($_decoded) > 0) {
+        $_rua_ranges = $_decoded;
+    }
 }
-$available = (int)$qty_numbers - $paid_and_pending - $cotas_rua_qty;
-$percent = (($paid_and_pending + $cotas_rua_qty) * 100) / $qty_numbers;
+if (empty($_rua_ranges) && !empty($cotas_rua_inicio) && !empty($cotas_rua_fim)) {
+    $_rua_ranges = [['inicio' => (int)$cotas_rua_inicio, 'fim' => (int)$cotas_rua_fim]];
+}
+foreach ($_rua_ranges as $_rng) {
+    $_ri = (int)$_rng['inicio'];
+    $_rf = (int)$_rng['fim'];
+    if ($_ri > 0 && $_rf >= $_ri) {
+        $cotas_rua_qty += ($_rf - $_ri) + 1;
+    }
+}
+
 $enable_share = $_settings->info("enable_share");
 $enable_groups = $_settings->info("enable_groups");
 $telegram_group_url = $_settings->info("telegram_group_url");

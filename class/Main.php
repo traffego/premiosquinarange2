@@ -3606,7 +3606,7 @@ class Main extends DBConnection
         if ($status == 1) {
             $firstnames = [];
             $stmt_plist = $this->conn->prepare(
-                "SELECT qty_numbers, pending_numbers, paid_numbers, cotas_rua_inicio, cotas_rua_fim FROM `product_list` WHERE id = ?"
+                "SELECT qty_numbers, pending_numbers, paid_numbers, cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM `product_list` WHERE id = ?"
             );
             $stmt_plist->bind_param("i", $id);
             $stmt_plist->execute();
@@ -3626,14 +3626,32 @@ class Main extends DBConnection
                     $qty_numbers - ($pending_numbers + $paid_numbers);
             }
 
-            // Excluir cotas de rua dos números livres
-            $cotas_rua_inicio = isset($product['cotas_rua_inicio']) ? (int)$product['cotas_rua_inicio'] : 0;
-            $cotas_rua_fim = isset($product['cotas_rua_fim']) ? (int)$product['cotas_rua_fim'] : 0;
-            $cotas_rua_qty = 0;
-            if ($cotas_rua_inicio > 0 && $cotas_rua_fim > 0 && $cotas_rua_fim >= $cotas_rua_inicio) {
-                $cotas_rua_qty = ($cotas_rua_fim - $cotas_rua_inicio) + 1;
-                $total_numbers_generated = $total_numbers_generated - $cotas_rua_qty;
+            // Excluir cotas de rua dos números livres (suporta múltiplos ranges)
+            $rua_ranges = [];
+            $cotas_rua_ranges_json = isset($product['cotas_rua_ranges']) ? $product['cotas_rua_ranges'] : '';
+            if (!empty($cotas_rua_ranges_json)) {
+                $decoded_ranges = json_decode($cotas_rua_ranges_json, true);
+                if (is_array($decoded_ranges) && count($decoded_ranges) > 0) {
+                    $rua_ranges = $decoded_ranges;
+                }
             }
+            // Fallback para o range legado (campo simples)
+            if (empty($rua_ranges)) {
+                $cotas_rua_inicio = isset($product['cotas_rua_inicio']) ? (int)$product['cotas_rua_inicio'] : 0;
+                $cotas_rua_fim = isset($product['cotas_rua_fim']) ? (int)$product['cotas_rua_fim'] : 0;
+                if ($cotas_rua_inicio > 0 && $cotas_rua_fim > 0 && $cotas_rua_fim >= $cotas_rua_inicio) {
+                    $rua_ranges = [['inicio' => $cotas_rua_inicio, 'fim' => $cotas_rua_fim]];
+                }
+            }
+            $cotas_rua_qty = 0;
+            foreach ($rua_ranges as $rng) {
+                $ri = (int)$rng['inicio'];
+                $rf = (int)$rng['fim'];
+                if ($ri > 0 && $rf > 0 && $rf >= $ri) {
+                    $cotas_rua_qty += ($rf - $ri) + 1;
+                }
+            }
+            $total_numbers_generated = $total_numbers_generated - $cotas_rua_qty;
 
             $all_lucky_numbers = [];
             $orders = $this->conn->query("SELECT o.*
@@ -3648,11 +3666,15 @@ class Main extends DBConnection
             $all_lucky_numbers = explode(",", $all_lucky_numbers);
             $used_numbers = array_flip($all_lucky_numbers);
 
-            // Marcar cotas de rua como usadas para não aparecerem como livres
-            if ($cotas_rua_inicio > 0 && $cotas_rua_fim > 0) {
-                for ($r = $cotas_rua_inicio; $r <= $cotas_rua_fim; $r++) {
-                    $rua_num = str_pad($r, strlen($qty_numbers), "0", STR_PAD_LEFT);
-                    $used_numbers[$rua_num] = true;
+            // Marcar todos os números de todos os ranges como usados
+            foreach ($rua_ranges as $rng) {
+                $ri = (int)$rng['inicio'];
+                $rf = (int)$rng['fim'];
+                if ($ri > 0 && $rf > 0) {
+                    for ($r = $ri; $r <= $rf; $r++) {
+                        $rua_num = str_pad($r, strlen($qty_numbers), "0", STR_PAD_LEFT);
+                        $used_numbers[$rua_num] = true;
+                    }
                 }
             }
 
