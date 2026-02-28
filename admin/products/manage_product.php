@@ -807,6 +807,39 @@ echo '<style>' .
                             xhr.send('product_id=' + productId + '&ranges_json=' + encodeURIComponent(JSON.stringify(ranges)));
                         }
 
+                        // Preview stats sem salvar (debounced)
+                        var _previewTimer = null;
+                        function previewStatsAjax() {
+                            if (productId <= 0) return;
+                            // Validar que pelo menos um range tem inicio > 0 e fim >= inicio
+                            var hasValid = ranges.some(function(r) { return r.inicio > 0 && r.fim >= r.inicio; });
+                            if (!hasValid) return;
+
+                            clearTimeout(_previewTimer);
+                            _previewTimer = setTimeout(function() {
+                                var url = _base_url_ + 'class/Main.php?action=preview_cotas_rua_stats';
+                                var xhr = new XMLHttpRequest();
+                                xhr.open('POST', url, true);
+                                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                                xhr.onreadystatechange = function() {
+                                    if (xhr.readyState === 4 && xhr.status === 200) {
+                                        try {
+                                            var resp = JSON.parse(xhr.responseText);
+                                            if (resp.status === 'success') {
+                                                boughtNumbers = resp.bought_numbers || {};
+                                                if (resp.range_stats) {
+                                                    resp.range_stats.forEach(function(s, i) { _rangeStats[i] = s; });
+                                                }
+                                                if (resp.pad) pad = resp.pad;
+                                                renderRanges();
+                                            }
+                                        } catch(e) {}
+                                    }
+                                };
+                                xhr.send('product_id=' + productId + '&ranges_json=' + encodeURIComponent(JSON.stringify(ranges)));
+                            }, 500);
+                        }
+
                         function openNumbersModal(idx) {
                             var r = ranges[idx];
                             if (!r) return;
@@ -883,7 +916,7 @@ echo '<style>' .
                                     row1.appendChild(del);
                                 }
 
-                                // Input change handlers
+                                // Input change handlers — preview stats on change
                                 row1.querySelectorAll('input').forEach(function(inp) {
                                     inp.addEventListener('change', function() {
                                         var i = parseInt(this.dataset.idx);
@@ -897,6 +930,8 @@ echo '<style>' .
                                         delete _rangeStats[i];
                                         syncHiddenField();
                                         renderRanges();
+                                        // Buscar stats automaticamente sem salvar
+                                        previewStatsAjax();
                                     });
                                 });
                                 block.appendChild(row1);
@@ -961,19 +996,14 @@ echo '<style>' .
                                         row2.appendChild(btnSave);
                                     }
 
-                                    // Ver Números button (only if saved)
-                                    if (isSaved) {
+                                    // Ver Números button (available when stats loaded, even before saving)
+                                    if (stats) {
                                         var btnVer = document.createElement('button');
                                         btnVer.type = 'button';
                                         btnVer.textContent = '👁 Ver Números';
                                         btnVer.style.cssText = 'padding:6px 14px;background:#4a5568;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;';
                                         btnVer.addEventListener('click', (function(i) { return function() {
-                                            // If we don't have boughtNumbers from server yet, fetch first
-                                            if (Object.keys(boughtNumbers).length === 0 && productId > 0) {
-                                                saveRangesAjax(function() { openNumbersModal(i); });
-                                            } else {
-                                                openNumbersModal(i);
-                                            }
+                                            openNumbersModal(i);
                                         }; })(idx));
                                         row2.appendChild(btnVer);
                                     }

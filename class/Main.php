@@ -5659,6 +5659,69 @@ class Main extends DBConnection
         $resp['pad'] = $pad;
         return json_encode($resp);
     }
+
+    // Preview stats without saving — used on input change
+    function preview_cotas_rua_stats() {
+        $resp = ['status' => 'success'];
+        $product_id = isset($_POST['product_id']) ? (int)$_POST['product_id'] : 0;
+        $ranges_json = isset($_POST['ranges_json']) ? $_POST['ranges_json'] : '[]';
+        
+        if ($product_id <= 0) {
+            $resp['status'] = 'failed';
+            return json_encode($resp);
+        }
+
+        $ranges = json_decode($ranges_json, true);
+        if (!is_array($ranges)) {
+            $resp['status'] = 'failed';
+            return json_encode($resp);
+        }
+
+        $clean_ranges = [];
+        foreach ($ranges as $r) {
+            $inicio = isset($r['inicio']) ? (int)$r['inicio'] : 0;
+            $fim = isset($r['fim']) ? (int)$r['fim'] : 0;
+            if ($inicio > 0 && $fim >= $inicio) {
+                if (($fim - $inicio + 1) > 20000) $fim = $inicio + 19999;
+                $clean_ranges[] = ['inicio' => $inicio, 'fim' => $fim];
+            }
+        }
+
+        // Buscar padding e números comprados (sem salvar nada)
+        $product = $this->conn->query("SELECT qty_numbers FROM product_list WHERE id = '" . $product_id . "'")->fetch_assoc();
+        $pad = strlen((string)((int)$product['qty_numbers'] - 1));
+
+        $orders = $this->conn->query("SELECT order_numbers FROM order_list WHERE product_id = '" . $product_id . "' AND status <> 3 AND order_numbers != '' AND order_numbers IS NOT NULL");
+        $allBought = [];
+        if ($orders) {
+            while ($row = $orders->fetch_assoc()) {
+                $parts = array_filter(explode(',', $row['order_numbers']));
+                foreach ($parts as $p) {
+                    $p = trim($p);
+                    if ($p !== '') {
+                        $allBought[$p] = true;
+                        $allBought[str_pad((int)$p, $pad, '0', STR_PAD_LEFT)] = true;
+                    }
+                }
+            }
+        }
+
+        $range_stats = [];
+        foreach ($clean_ranges as $r) {
+            $total = $r['fim'] - $r['inicio'] + 1;
+            $bought = 0;
+            for ($n = $r['inicio']; $n <= $r['fim']; $n++) {
+                $num = str_pad($n, $pad, '0', STR_PAD_LEFT);
+                if (isset($allBought[$num])) $bought++;
+            }
+            $range_stats[] = ['total' => $total, 'bought' => $bought, 'reserved' => $total - $bought];
+        }
+
+        $resp['range_stats'] = $range_stats;
+        $resp['bought_numbers'] = (object)$allBought;
+        $resp['pad'] = $pad;
+        return json_encode($resp);
+    }
 }
 
 require_once "../settings.php";
@@ -5672,6 +5735,9 @@ switch ($action) {
         break;
     case "save_cotas_rua_ranges":
         echo $Main->save_cotas_rua_ranges();
+        break;
+    case "preview_cotas_rua_stats":
+        echo $Main->preview_cotas_rua_stats();
         break;
 
     case "search_raffle_smallest_and_largest_number":
