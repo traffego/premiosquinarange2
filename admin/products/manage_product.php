@@ -777,6 +777,20 @@ echo '<style>' .
                             }
                         }
 
+                        // Verifica interseção entre ranges. Retorna o índice do range conflitante ou -1.
+                        function checkOverlap(idx) {
+                            var r = ranges[idx];
+                            if (!r || r.inicio <= 0 || r.fim < r.inicio) return -1;
+                            for (var j = 0; j < ranges.length; j++) {
+                                if (j === idx) continue;
+                                var o = ranges[j];
+                                if (o.inicio <= 0 || o.fim < o.inicio) continue;
+                                // Dois intervalos [a,b] e [c,d] se intersectam se a <= d && c <= b
+                                if (r.inicio <= o.fim && o.inicio <= r.fim) return j;
+                            }
+                            return -1;
+                        }
+
                         function saveRangesAjax(callback) {
                             var url = _base_url_ + 'class/Main.php?action=save_cotas_rua_ranges';
                             console.log('[COTAS v9] AJAX url:', url, 'productId:', productId);
@@ -926,6 +940,11 @@ echo '<style>' .
                                             alert('Cada sequência pode ter no máximo 20.000 números!');
                                             ranges[i].fim = ranges[i].inicio + 19999;
                                         }
+                                        // Verificar interseção
+                                        var conflito = checkOverlap(i);
+                                        if (conflito >= 0) {
+                                            alert('A Sequência ' + (i+1) + ' se sobrepõe com a Sequência ' + (conflito+1) + '. Ajuste os valores para que não haja interseção.');
+                                        }
                                         delete _savedRanges[i];
                                         delete _rangeStats[i];
                                         syncHiddenField();
@@ -940,6 +959,15 @@ echo '<style>' .
                                 if (count > 0) {
                                     var row2 = document.createElement('div');
                                     row2.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;';
+
+                                    // Verificar interseção e mostrar aviso visual
+                                    var conflito = checkOverlap(idx);
+                                    if (conflito >= 0) {
+                                        var warnEl = document.createElement('span');
+                                        warnEl.style.cssText = 'font-size:12px;color:#dc2626;font-weight:600;';
+                                        warnEl.textContent = '⚠️ Sobrepõe com Sequência ' + (conflito+1);
+                                        row2.appendChild(warnEl);
+                                    }
 
                                     // Stats
                                     if (stats) {
@@ -961,6 +989,12 @@ echo '<style>' .
                                         btnSave.textContent = '💾 Salvar Sequência';
                                         btnSave.style.cssText = 'padding:6px 14px;background:#7e3af2;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;';
                                         btnSave.addEventListener('click', (function(i) { return function() {
+                                            // Bloquear se houver interseção
+                                            var conflito = checkOverlap(i);
+                                            if (conflito >= 0) {
+                                                alert('A Sequência ' + (i+1) + ' se sobrepõe com a Sequência ' + (conflito+1) + '. Corrija antes de salvar.');
+                                                return;
+                                            }
                                             // Check for bought numbers in this range
                                             var r = ranges[i];
                                             var boughtCount = 0;
@@ -1037,8 +1071,32 @@ echo '<style>' .
                             renderRanges();
                             console.log('[COTAS v9] INIT no-AJAX, rendered', ranges.length, 'ranges');
                         }
+
+                        // Expor verificação de ranges não salvos para o form submit
+                        window.hasUnsavedCotasRuaRanges = function() {
+                            for (var i = 0; i < ranges.length; i++) {
+                                var r = ranges[i];
+                                // Ignorar ranges vazios (inicio=0, fim=0)
+                                if (r.inicio <= 0 && r.fim <= 0) continue;
+                                if (r.inicio > 0 && r.fim >= r.inicio && !_savedRanges[i]) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        };
                     })();
                     </script>
+                </div>
+
+                <!-- Modal: aviso de sequências não salvas -->
+                <div id="modal-unsaved-ranges" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+                    <div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+                        <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">⚠️ Sequência não salva</p>
+                        <p style="font-size:14px;color:#555;margin-bottom:18px;">Você tem sequências de cotas de rua que ainda <strong>não foram salvas</strong>. Vá até a aba "Cotas de rua" e clique em "💾 Salvar Sequência" antes de salvar o produto.</p>
+                        <div style="display:flex;gap:10px;">
+                            <button id="btn-unsaved-ok" type="button" style="flex:1;padding:10px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Entendi</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div style="margin-top:20px;">
@@ -1390,11 +1448,21 @@ echo '<style>' .
 
         //Fim imagem e galeria
         //Save products
+        // Listener para fechar modal de sequências não salvas
+        $('#btn-unsaved-ok').click(function() {
+            $('#modal-unsaved-ranges').css('display', 'none');
+        });
+
         $('#product-form').submit(function(e) {
             e.preventDefault();
             var _this = $(this)
             $('.err-msg').remove();
 
+            // Verificar se há sequências de cotas de rua não salvas
+            if (typeof window.hasUnsavedCotasRuaRanges === 'function' && window.hasUnsavedCotasRuaRanges()) {
+                $('#modal-unsaved-ranges').css('display', 'flex');
+                return;
+            }
 
             $.ajax({
                 url: _base_url_ + "class/Main.php?action=save_product_sys",

@@ -5604,7 +5604,18 @@ class Main extends DBConnection
                 if (($fim - $inicio + 1) > 20000) {
                     $fim = $inicio + 19999;
                 }
-                $clean_ranges[] = ['inicio' => $inicio, 'fim' => $fim];
+        $clean_ranges[] = ['inicio' => $inicio, 'fim' => $fim];
+            }
+        }
+
+        // Validar interseção entre ranges
+        for ($a = 0; $a < count($clean_ranges); $a++) {
+            for ($b = $a + 1; $b < count($clean_ranges); $b++) {
+                if ($clean_ranges[$a]['inicio'] <= $clean_ranges[$b]['fim'] && $clean_ranges[$b]['inicio'] <= $clean_ranges[$a]['fim']) {
+                    $resp['status'] = 'failed';
+                    $resp['error'] = 'A Sequência ' . ($a+1) . ' se sobrepõe com a Sequência ' . ($b+1) . '. Corrija antes de salvar.';
+                    return json_encode($resp);
+                }
             }
         }
 
