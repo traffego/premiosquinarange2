@@ -81,7 +81,7 @@ echo '<style>' .
 <main class="h-full pb-16 overflow-y-auto">
     <div class="container px-6 mx-auto grid">
         <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v1</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
+            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v2</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
         </h2>
         <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
             <div class="flex">
@@ -747,25 +747,32 @@ echo '<style>' .
                         var boughtNumbers = {};
                         <?php
                         if (isset($id) && $id) {
-                            $rua_orders = $conn->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3");
+                            // Tentar $conn e fallback para $_settings->conn
+                            $_db = isset($conn) && $conn ? $conn : (isset($_settings) ? $_settings->conn : null);
                             $allBought = [];
-                            if ($rua_orders) {
-                                while ($rua_row = $rua_orders->fetch_assoc()) {
-                                    $parts = array_filter(explode(',', $rua_row['order_numbers']));
-                                    foreach ($parts as $p) {
-                                        $p = trim($p);
-                                        if ($p !== '') {
-                                            // Guarda o número exato do BD
-                                            $allBought[$p] = true;
-                                            // Guarda também a versão normalizada com zero-padding (caso o formato no BD seja diferente)
-                                            $normalized = str_pad((int)$p, $pad, '0', STR_PAD_LEFT);
-                                            $allBought[$normalized] = true;
+                            $_debug_query_ok = false;
+                            $_debug_rows = 0;
+                            if ($_db) {
+                                $rua_orders = $_db->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3");
+                                if ($rua_orders) {
+                                    $_debug_query_ok = true;
+                                    $_debug_rows = $rua_orders->num_rows;
+                                    while ($rua_row = $rua_orders->fetch_assoc()) {
+                                        $parts = array_filter(explode(',', $rua_row['order_numbers']));
+                                        foreach ($parts as $p) {
+                                            $p = trim($p);
+                                            if ($p !== '') {
+                                                $allBought[$p] = true;
+                                                $normalized = str_pad((int)$p, $pad, '0', STR_PAD_LEFT);
+                                                $allBought[$normalized] = true;
+                                            }
                                         }
                                     }
                                 }
                             }
-                            // (object) garante JSON objeto {} mesmo quando vazio
                             echo 'boughtNumbers = ' . json_encode((object)$allBought) . ';';
+                            // Debug temporário
+                            echo 'console.log("[COTAS DEBUG v2] query_ok=' . ($_debug_query_ok ? 'true' : 'false') . ', rows=' . $_debug_rows . ', bought_keys=" + Object.keys(boughtNumbers).length + ", pad=' . $pad . ', sample=" + Object.keys(boughtNumbers).slice(0,5).join(","));';
                         }
                         ?>
 
