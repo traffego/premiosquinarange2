@@ -793,14 +793,14 @@ echo '<style>' .
 
                         function saveRangesAjax(callback) {
                             var url = _base_url_ + 'class/Main.php?action=save_cotas_rua_ranges';
-                            console.log('[COTAS v12] AJAX url:', url, 'productId:', productId);
+                            console.log('[COTAS v9] AJAX url:', url, 'productId:', productId);
                             var xhr = new XMLHttpRequest();
                             xhr.open('POST', url, true);
                             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                            xhr.onerror = function() { console.log('[COTAS v12] XHR error'); };
+                            xhr.onerror = function() { console.log('[COTAS v9] XHR error'); };
                             xhr.onreadystatechange = function() {
                                 if (xhr.readyState === 4) {
-                                    console.log('[COTAS v12] status:', xhr.status, 'resp:', xhr.responseText.substring(0, 200));
+                                    console.log('[COTAS v9] status:', xhr.status, 'resp:', xhr.responseText.substring(0, 200));
                                     if (xhr.status === 200) {
                                         try {
                                             var resp = JSON.parse(xhr.responseText);
@@ -814,7 +814,7 @@ echo '<style>' .
                                                 ranges.forEach(function(r, i) { _savedRanges[i] = true; });
                                             }
                                             if (callback) callback(resp);
-                                        } catch(e) { console.log('[COTAS v12] JSON parse error:', e); alert('Erro ao salvar.'); }
+                                        } catch(e) { console.log('[COTAS v9] JSON parse error:', e); alert('Erro ao salvar.'); }
                                     }
                                 }
                             };
@@ -1060,16 +1060,16 @@ echo '<style>' .
                         });
 
                         // Carregar stats iniciais se já tem ranges salvos
-                        console.log('[COTAS v12] INIT', {productId: productId, ranges: ranges, pad: pad});
+                        console.log('[COTAS v9] INIT', {productId: productId, ranges: ranges, pad: pad});
                         if (productId > 0 && ranges.length > 0 && ranges[0].inicio > 0) {
                             saveRangesAjax(function(resp) {
-                                console.log('[COTAS v12] INIT resp:', resp);
+                                console.log('[COTAS v9] INIT resp:', resp);
                                 renderRanges();
                             });
                         } else {
                             if (ranges.length === 0) ranges.push({ inicio: 0, fim: 0 });
                             renderRanges();
-                            console.log('[COTAS v12] INIT no-AJAX, rendered', ranges.length, 'ranges');
+                            console.log('[COTAS v9] INIT no-AJAX, rendered', ranges.length, 'ranges');
                         }
 
                         // Expor verificação de ranges não salvos para o form submit
