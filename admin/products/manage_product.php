@@ -81,7 +81,7 @@ echo '<style>' .
 <main class="h-full pb-16 overflow-y-auto">
     <div class="container px-6 mx-auto grid">
         <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v8</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
+            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v9</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
         </h2>
         <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
             <div class="flex">
@@ -756,24 +756,30 @@ echo '<style>' .
                         }
 
                         function saveRangesAjax(callback) {
+                            var url = _base_url_ + 'class/Main.php?action=save_cotas_rua_ranges';
+                            console.log('[COTAS v9] AJAX url:', url, 'productId:', productId);
                             var xhr = new XMLHttpRequest();
-                            xhr.open('POST', _base_url_ + 'class/Main.php?action=save_cotas_rua_ranges', true);
+                            xhr.open('POST', url, true);
                             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                            xhr.onerror = function() { console.log('[COTAS v9] XHR error'); };
                             xhr.onreadystatechange = function() {
-                                if (xhr.readyState === 4 && xhr.status === 200) {
-                                    try {
-                                        var resp = JSON.parse(xhr.responseText);
-                                        if (resp.status === 'success') {
-                                            boughtNumbers = resp.bought_numbers || {};
-                                            _rangeStats = {};
-                                            if (resp.range_stats) {
-                                                resp.range_stats.forEach(function(s, i) { _rangeStats[i] = s; });
+                                if (xhr.readyState === 4) {
+                                    console.log('[COTAS v9] status:', xhr.status, 'resp:', xhr.responseText.substring(0, 200));
+                                    if (xhr.status === 200) {
+                                        try {
+                                            var resp = JSON.parse(xhr.responseText);
+                                            if (resp.status === 'success') {
+                                                boughtNumbers = resp.bought_numbers || {};
+                                                _rangeStats = {};
+                                                if (resp.range_stats) {
+                                                    resp.range_stats.forEach(function(s, i) { _rangeStats[i] = s; });
+                                                }
+                                                if (resp.pad) pad = resp.pad;
+                                                ranges.forEach(function(r, i) { _savedRanges[i] = true; });
                                             }
-                                            if (resp.pad) pad = resp.pad;
-                                            ranges.forEach(function(r, i) { _savedRanges[i] = true; });
-                                        }
-                                        if (callback) callback(resp);
-                                    } catch(e) { alert('Erro ao salvar.'); }
+                                            if (callback) callback(resp);
+                                        } catch(e) { console.log('[COTAS v9] JSON parse error:', e); alert('Erro ao salvar.'); }
+                                    }
                                 }
                             };
                             xhr.send('product_id=' + productId + '&ranges_json=' + encodeURIComponent(JSON.stringify(ranges)));
@@ -968,11 +974,16 @@ echo '<style>' .
                         });
 
                         // Carregar stats iniciais se já tem ranges salvos
+                        console.log('[COTAS v9] INIT', {productId: productId, ranges: ranges, pad: pad});
                         if (productId > 0 && ranges.length > 0 && ranges[0].inicio > 0) {
-                            saveRangesAjax(function() { renderRanges(); });
+                            saveRangesAjax(function(resp) {
+                                console.log('[COTAS v9] INIT resp:', resp);
+                                renderRanges();
+                            });
                         } else {
                             if (ranges.length === 0) ranges.push({ inicio: 0, fim: 0 });
                             renderRanges();
+                            console.log('[COTAS v9] INIT no-AJAX, rendered', ranges.length, 'ranges');
                         }
                     })();
                     </script>
