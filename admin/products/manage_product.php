@@ -81,7 +81,7 @@ echo '<style>' .
 <main class="h-full pb-16 overflow-y-auto">
     <div class="container px-6 mx-auto grid">
         <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v4</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
+            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v5</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
         </h2>
         <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
             <div class="flex">
@@ -729,6 +729,7 @@ echo '<style>' .
                     <div id="lista-cotas-rua-wrap" class="mt-6" style="display:none;">
                         <hr class="mb-4 border-gray-300 dark:border-gray-600">
                         <p class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">📋 Números reservados</p>
+                        <button type="button" id="btn-ver-numeros" style="display:none;margin-bottom:10px;padding:8px 16px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">👁 Ver todos os números</button>
                         <div id="lista-cotas-rua-badges" style="display:flex;flex-wrap:wrap;gap:6px;max-height:320px;overflow-y:auto;padding:12px;background:rgba(0,0,0,0.04);border-radius:8px;border:1px solid #e2e8f0;"></div>
                         <p class="mt-2" style="font-size:11px;color:#a0aec0;">
                             <span style="display:inline-block;width:12px;height:12px;background:#7e3af2;border-radius:3px;margin-right:4px;"></span>Livre para a rua &nbsp;
@@ -803,12 +804,24 @@ echo '<style>' .
                             }
                         }
 
+                        var _badgesVisible = false;
+
                         function renderBadges() {
                             var wrap = document.getElementById('lista-cotas-rua-wrap');
                             var cont = document.getElementById('lista-cotas-rua-badges');
+                            var btnVer = document.getElementById('btn-ver-numeros');
                             cont.innerHTML = '';
-                            if (ranges.length === 0) { wrap.style.display = 'none'; return; }
+                            var totalNums = 0;
+                            ranges.forEach(function(r) { if (r.fim >= r.inicio) totalNums += (r.fim - r.inicio) + 1; });
+                            if (ranges.length === 0 || totalNums === 0) { wrap.style.display = 'none'; return; }
                             wrap.style.display = 'block';
+                            // Não renderizar badges até o usuário clicar
+                            if (!_badgesVisible) {
+                                btnVer.style.display = 'inline-block';
+                                btnVer.textContent = '👁 Ver todos os ' + totalNums + ' números';
+                                return;
+                            }
+                            btnVer.style.display = 'none';
                             ranges.forEach(function(r) {
                                 for (var n = r.inicio; n <= r.fim; n++) {
                                     var num = padNum(n);
@@ -845,11 +858,31 @@ echo '<style>' .
                                     });
                                     row.appendChild(del);
                                 }
+                                // Mostrar contagem e validação de 20k
+                                var count = (r.fim >= r.inicio) ? (r.fim - r.inicio + 1) : 0;
+                                var info = document.createElement('span');
+                                info.style.cssText = 'font-size:11px;color:#a0aec0;';
+                                info.textContent = count > 0 ? count.toLocaleString() + ' números' : '';
+                                row.appendChild(info);
+                                if (count > 20000) {
+                                    var warn = document.createElement('span');
+                                    warn.style.cssText = 'font-size:11px;color:#ef4444;font-weight:600;';
+                                    warn.textContent = '⚠ Máx. 20.000 por sequência!';
+                                    row.appendChild(warn);
+                                }
                                 row.querySelectorAll('input').forEach(function(inp) {
                                     inp.addEventListener('change', function() {
                                         var i = parseInt(this.dataset.idx);
                                         ranges[i][this.dataset.field] = parseInt(this.value) || 0;
+                                        // Validar limite de 20k
+                                        var rr = ranges[i];
+                                        if (rr.fim >= rr.inicio && (rr.fim - rr.inicio + 1) > 20000) {
+                                            alert('Cada sequência pode ter no máximo 20.000 números!');
+                                            ranges[i].fim = ranges[i].inicio + 19999;
+                                        }
+                                        _badgesVisible = false;
                                         syncHiddenField();
+                                        renderRanges();
                                         renderBadges();
                                     });
                                 });
@@ -894,6 +927,12 @@ echo '<style>' .
                         });
                         document.getElementById('btn-rua-cancelar').addEventListener('click', function() {
                             document.getElementById('modal-rua-confirmacao').style.display = 'none';
+                        });
+
+                        // Botão Ver Todos
+                        document.getElementById('btn-ver-numeros').addEventListener('click', function() {
+                            _badgesVisible = true;
+                            renderBadges();
                         });
 
                         // Init
