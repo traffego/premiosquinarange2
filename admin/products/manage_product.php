@@ -741,6 +741,13 @@ echo '<style>' .
                     }
                     $pad = isset($qty_numbers) ? strlen((string)((int)$qty_numbers - 1)) : 6;
                     ?>
+                    <script>console.log('[COTAS PHP DEBUG]', <?= json_encode([
+                        'cotas_rua_ranges_raw' => isset($cotas_rua_ranges) ? $cotas_rua_ranges : 'UNDEFINED',
+                        'cotas_rua_inicio' => isset($cotas_rua_inicio) ? $cotas_rua_inicio : 'UNDEFINED',
+                        'cotas_rua_fim' => isset($cotas_rua_fim) ? $cotas_rua_fim : 'UNDEFINED',
+                        '_saved_ranges' => $_saved_ranges,
+                        'pad' => $pad
+                    ]) ?>);</script>
 
                     <script>
                     (function() {
