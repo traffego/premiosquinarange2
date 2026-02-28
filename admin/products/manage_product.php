@@ -81,7 +81,7 @@ echo '<style>' .
 <main class="h-full pb-16 overflow-y-auto">
     <div class="container px-6 mx-auto grid">
         <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v2</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
+            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v3</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
         </h2>
         <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
             <div class="flex">
@@ -747,16 +747,29 @@ echo '<style>' .
                         var boughtNumbers = {};
                         <?php
                         if (isset($id) && $id) {
-                            // Tentar $conn e fallback para $_settings->conn
                             $_db = isset($conn) && $conn ? $conn : (isset($_settings) ? $_settings->conn : null);
                             $allBought = [];
-                            $_debug_query_ok = false;
-                            $_debug_rows = 0;
+                            $_debug_info = ['db' => ($_db ? 'ok' : 'null'), 'id' => $id, 'pad' => $pad];
                             if ($_db) {
-                                $rua_orders = $_db->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3");
+                                // Debug: total de pedidos SEM filtro de status
+                                $_all_count = $_db->query("SELECT COUNT(*) as c FROM order_list WHERE product_id = '" . (int)$id . "'")->fetch_assoc();
+                                $_debug_info['total_orders'] = $_all_count['c'];
+                                // Debug: total com status <> 3
+                                $_active_count = $_db->query("SELECT COUNT(*) as c FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3")->fetch_assoc();
+                                $_debug_info['active_orders'] = $_active_count['c'];
+                                // Debug: pegar um sample de order_numbers
+                                $_sample = $_db->query("SELECT order_numbers, status FROM order_list WHERE product_id = '" . (int)$id . "' LIMIT 3");
+                                $_samples = [];
+                                if ($_sample) {
+                                    while ($_sr = $_sample->fetch_assoc()) {
+                                        $_samples[] = 'st=' . $_sr['status'] . '|nums=' . substr($_sr['order_numbers'], 0, 40);
+                                    }
+                                }
+                                $_debug_info['sample_orders'] = $_samples;
+
+                                $rua_orders = $_db->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3 AND order_numbers != '' AND order_numbers IS NOT NULL");
                                 if ($rua_orders) {
-                                    $_debug_query_ok = true;
-                                    $_debug_rows = $rua_orders->num_rows;
+                                    $_debug_info['query_rows'] = $rua_orders->num_rows;
                                     while ($rua_row = $rua_orders->fetch_assoc()) {
                                         $parts = array_filter(explode(',', $rua_row['order_numbers']));
                                         foreach ($parts as $p) {
@@ -771,10 +784,10 @@ echo '<style>' .
                                 }
                             }
                             echo 'boughtNumbers = ' . json_encode((object)$allBought) . ';';
-                            // Debug temporário
-                            echo 'console.log("[COTAS DEBUG v2] query_ok=' . ($_debug_query_ok ? 'true' : 'false') . ', rows=' . $_debug_rows . ', bought_keys=" + Object.keys(boughtNumbers).length + ", pad=' . $pad . ', sample=" + Object.keys(boughtNumbers).slice(0,5).join(","));';
+                            echo 'console.log("[COTAS DEBUG v3]", ' . json_encode($_debug_info) . ', "bought_keys=" + Object.keys(boughtNumbers).length);';
                         }
                         ?>
+
 
 
                         function padNum(n) {
