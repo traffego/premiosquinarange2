@@ -81,7 +81,7 @@ echo '<style>' .
 <main class="h-full pb-16 overflow-y-auto">
     <div class="container px-6 mx-auto grid">
         <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v3</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
+            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v4</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
         </h2>
         <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
             <div class="flex">
@@ -746,19 +746,16 @@ echo '<style>' .
                         // Números já comprados (pending+paid) no produto
                         var boughtNumbers = {};
                         <?php
-                        if (isset($id) && $id) {
+                        $_product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                        if ($_product_id > 0) {
                             $_db = isset($conn) && $conn ? $conn : (isset($_settings) ? $_settings->conn : null);
                             $allBought = [];
-                            $_debug_info = ['db' => ($_db ? 'ok' : 'null'), 'id' => $id, 'pad' => $pad];
+                            $_debug_info = ['db' => ($_db ? 'ok' : 'null'), 'product_id' => $_product_id, 'pad' => $pad];
                             if ($_db) {
-                                // Debug: total de pedidos SEM filtro de status
-                                $_all_count = $_db->query("SELECT COUNT(*) as c FROM order_list WHERE product_id = '" . (int)$id . "'")->fetch_assoc();
+                                $_all_count = $_db->query("SELECT COUNT(*) as c FROM order_list WHERE product_id = '" . $_product_id . "'")->fetch_assoc();
                                 $_debug_info['total_orders'] = $_all_count['c'];
-                                // Debug: total com status <> 3
-                                $_active_count = $_db->query("SELECT COUNT(*) as c FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3")->fetch_assoc();
-                                $_debug_info['active_orders'] = $_active_count['c'];
-                                // Debug: pegar um sample de order_numbers
-                                $_sample = $_db->query("SELECT order_numbers, status FROM order_list WHERE product_id = '" . (int)$id . "' LIMIT 3");
+
+                                $_sample = $_db->query("SELECT order_numbers, status FROM order_list WHERE product_id = '" . $_product_id . "' LIMIT 3");
                                 $_samples = [];
                                 if ($_sample) {
                                     while ($_sr = $_sample->fetch_assoc()) {
@@ -767,7 +764,7 @@ echo '<style>' .
                                 }
                                 $_debug_info['sample_orders'] = $_samples;
 
-                                $rua_orders = $_db->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3 AND order_numbers != '' AND order_numbers IS NOT NULL");
+                                $rua_orders = $_db->query("SELECT order_numbers FROM order_list WHERE product_id = '" . $_product_id . "' AND status <> 3 AND order_numbers != '' AND order_numbers IS NOT NULL");
                                 if ($rua_orders) {
                                     $_debug_info['query_rows'] = $rua_orders->num_rows;
                                     while ($rua_row = $rua_orders->fetch_assoc()) {
@@ -784,7 +781,7 @@ echo '<style>' .
                                 }
                             }
                             echo 'boughtNumbers = ' . json_encode((object)$allBought) . ';';
-                            echo 'console.log("[COTAS DEBUG v3]", ' . json_encode($_debug_info) . ', "bought_keys=" + Object.keys(boughtNumbers).length);';
+                            echo 'console.log("[COTAS DEBUG v4]", ' . json_encode($_debug_info) . ', "bought_keys=" + Object.keys(boughtNumbers).length);';
                         }
                         ?>
 
