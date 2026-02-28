@@ -747,16 +747,20 @@ echo '<style>' .
                         var boughtNumbers = {};
                         <?php
                         if (isset($id) && $id) {
-                            $rua_orders = $conn->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "'");
+                            $rua_orders = $conn->query("SELECT order_numbers FROM order_list WHERE product_id = '" . (int)$id . "' AND status <> 3");
                             $allBought = [];
-                            while ($rua_row = $rua_orders->fetch_assoc()) {
-                                $parts = array_filter(explode(',', $rua_row['order_numbers']));
-                                foreach ($parts as $p) {
-                                    $p = trim($p);
-                                    if ($p !== '') {
-                                        // Normaliza zero-padding igual ao padNum() do JS
-                                        $key = str_pad((int)$p, $pad, '0', STR_PAD_LEFT);
-                                        $allBought[$key] = true;
+                            if ($rua_orders) {
+                                while ($rua_row = $rua_orders->fetch_assoc()) {
+                                    $parts = array_filter(explode(',', $rua_row['order_numbers']));
+                                    foreach ($parts as $p) {
+                                        $p = trim($p);
+                                        if ($p !== '') {
+                                            // Guarda o número exato do BD
+                                            $allBought[$p] = true;
+                                            // Guarda também a versão normalizada com zero-padding (caso o formato no BD seja diferente)
+                                            $normalized = str_pad((int)$p, $pad, '0', STR_PAD_LEFT);
+                                            $allBought[$normalized] = true;
+                                        }
                                     }
                                 }
                             }
