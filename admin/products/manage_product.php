@@ -690,7 +690,7 @@ echo '<style>' .
                     if (empty($_saved_ranges) && isset($cotas_rua_inicio) && !empty($cotas_rua_inicio) && isset($cotas_rua_fim) && !empty($cotas_rua_fim)) {
                         $_saved_ranges = [['inicio' => (int)$cotas_rua_inicio, 'fim' => (int)$cotas_rua_fim]];
                     }
-                    $pad = isset($qty_numbers) ? strlen((string)$qty_numbers) : 1;
+                    $pad = isset($qty_numbers) ? strlen((string)((int)$qty_numbers - 1)) : 1;
                     ?>
 
                     <label class="block mt-4 text-sm">
