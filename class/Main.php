@@ -5575,6 +5575,90 @@ class Main extends DBConnection
         
         return json_encode($resp);
     }
+
+    function save_cotas_rua_ranges() {
+        $resp = ['status' => 'success'];
+        $product_id = isset($_POST['product_id']) ? (int)$_POST['product_id'] : 0;
+        $ranges_json = isset($_POST['ranges_json']) ? $_POST['ranges_json'] : '[]';
+        
+        if ($product_id <= 0) {
+            $resp['status'] = 'failed';
+            $resp['error'] = 'ID do produto inválido.';
+            return json_encode($resp);
+        }
+
+        // Validar JSON
+        $ranges = json_decode($ranges_json, true);
+        if (!is_array($ranges)) {
+            $resp['status'] = 'failed';
+            $resp['error'] = 'JSON de ranges inválido.';
+            return json_encode($resp);
+        }
+
+        // Validar cada range (max 20k)
+        $clean_ranges = [];
+        foreach ($ranges as $r) {
+            $inicio = isset($r['inicio']) ? (int)$r['inicio'] : 0;
+            $fim = isset($r['fim']) ? (int)$r['fim'] : 0;
+            if ($inicio > 0 && $fim >= $inicio) {
+                if (($fim - $inicio + 1) > 20000) {
+                    $fim = $inicio + 19999;
+                }
+                $clean_ranges[] = ['inicio' => $inicio, 'fim' => $fim];
+            }
+        }
+
+        $ranges_str = json_encode($clean_ranges);
+        // Legacy compat
+        $legacy_inicio = count($clean_ranges) > 0 ? $clean_ranges[0]['inicio'] : 0;
+        $legacy_fim = count($clean_ranges) > 0 ? $clean_ranges[0]['fim'] : 0;
+
+        $stmt = $this->conn->prepare("UPDATE product_list SET cotas_rua_ranges = ?, cotas_rua_inicio = ?, cotas_rua_fim = ? WHERE id = ?");
+        $stmt->bind_param('siii', $ranges_str, $legacy_inicio, $legacy_fim, $product_id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Buscar números comprados por range
+        $product = $this->conn->query("SELECT qty_numbers FROM product_list WHERE id = '" . $product_id . "'")->fetch_assoc();
+        $pad = strlen((string)((int)$product['qty_numbers'] - 1));
+
+        $orders = $this->conn->query("SELECT order_numbers FROM order_list WHERE product_id = '" . $product_id . "' AND status <> 3 AND order_numbers != '' AND order_numbers IS NOT NULL");
+        $allBought = [];
+        if ($orders) {
+            while ($row = $orders->fetch_assoc()) {
+                $parts = array_filter(explode(',', $row['order_numbers']));
+                foreach ($parts as $p) {
+                    $p = trim($p);
+                    if ($p !== '') {
+                        $allBought[$p] = true;
+                        $allBought[str_pad((int)$p, $pad, '0', STR_PAD_LEFT)] = true;
+                    }
+                }
+            }
+        }
+
+        // Estatísticas por range
+        $range_stats = [];
+        foreach ($clean_ranges as $idx => $r) {
+            $total = $r['fim'] - $r['inicio'] + 1;
+            $bought = 0;
+            for ($n = $r['inicio']; $n <= $r['fim']; $n++) {
+                $num = str_pad($n, $pad, '0', STR_PAD_LEFT);
+                if (isset($allBought[$num])) $bought++;
+            }
+            $range_stats[] = [
+                'total' => $total,
+                'bought' => $bought,
+                'reserved' => $total - $bought
+            ];
+        }
+
+        $resp['ranges'] = $clean_ranges;
+        $resp['range_stats'] = $range_stats;
+        $resp['bought_numbers'] = (object)$allBought;
+        $resp['pad'] = $pad;
+        return json_encode($resp);
+    }
 }
 
 require_once "../settings.php";
@@ -5585,6 +5669,9 @@ $sysset = new System();
 switch ($action) {
     case "save_product_sys":
         echo $Main->save_product();
+        break;
+    case "save_cotas_rua_ranges":
+        echo $Main->save_cotas_rua_ranges();
         break;
 
     case "search_raffle_smallest_and_largest_number":

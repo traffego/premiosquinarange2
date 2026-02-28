@@ -81,7 +81,7 @@ echo '<style>' .
 <main class="h-full pb-16 overflow-y-auto">
     <div class="container px-6 mx-auto grid">
         <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v6</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
+            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v7</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
         </h2>
         <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
             <div class="flex">
@@ -725,64 +725,20 @@ echo '<style>' .
                         </div>
                     </div>
 
-                    <!-- Legenda de cores (fora do bloco por range) -->
-                    <div id="legenda-cotas-rua" class="mt-4" style="display:none;">
-                        <p style="font-size:11px;color:#a0aec0;">
-                            <span style="display:inline-block;width:12px;height:12px;background:#7e3af2;border-radius:3px;margin-right:4px;"></span>Livre para a rua &nbsp;
-                            <span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:3px;margin-right:4px;margin-left:8px;"></span>Já comprado online
-                        </p>
-                    </div>
+
 
                     <script>
                     (function() {
-                        var productId = '<?= isset($id) ? (int)$id : 0 ?>';
+                        var productId = <?= isset($_GET['id']) ? (int)$_GET['id'] : 0 ?>;
                         var qtyNumbers = <?= isset($qty_numbers) ? (int)$qty_numbers : 1 ?>;
                         var pad = <?= $pad ?>;
                         var ranges = <?= json_encode($_saved_ranges) ?>;
-
-                        // Números já comprados (pending+paid) no produto
                         var boughtNumbers = {};
-                        <?php
-                        $_product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-                        if ($_product_id > 0) {
-                            $_db = isset($conn) && $conn ? $conn : (isset($_settings) ? $_settings->conn : null);
-                            $allBought = [];
-                            $_debug_info = ['db' => ($_db ? 'ok' : 'null'), 'product_id' => $_product_id, 'pad' => $pad];
-                            if ($_db) {
-                                $_all_count = $_db->query("SELECT COUNT(*) as c FROM order_list WHERE product_id = '" . $_product_id . "'")->fetch_assoc();
-                                $_debug_info['total_orders'] = $_all_count['c'];
+                        var _rangeStats = {};
+                        var _savedRanges = {}; // tracks which ranges are saved
 
-                                $_sample = $_db->query("SELECT order_numbers, status FROM order_list WHERE product_id = '" . $_product_id . "' LIMIT 3");
-                                $_samples = [];
-                                if ($_sample) {
-                                    while ($_sr = $_sample->fetch_assoc()) {
-                                        $_samples[] = 'st=' . $_sr['status'] . '|nums=' . substr($_sr['order_numbers'], 0, 40);
-                                    }
-                                }
-                                $_debug_info['sample_orders'] = $_samples;
-
-                                $rua_orders = $_db->query("SELECT order_numbers FROM order_list WHERE product_id = '" . $_product_id . "' AND status <> 3 AND order_numbers != '' AND order_numbers IS NOT NULL");
-                                if ($rua_orders) {
-                                    $_debug_info['query_rows'] = $rua_orders->num_rows;
-                                    while ($rua_row = $rua_orders->fetch_assoc()) {
-                                        $parts = array_filter(explode(',', $rua_row['order_numbers']));
-                                        foreach ($parts as $p) {
-                                            $p = trim($p);
-                                            if ($p !== '') {
-                                                $allBought[$p] = true;
-                                                $normalized = str_pad((int)$p, $pad, '0', STR_PAD_LEFT);
-                                                $allBought[$normalized] = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            echo 'boughtNumbers = ' . json_encode((object)$allBought) . ';';
-                            echo 'console.log("[COTAS DEBUG v4]", ' . json_encode($_debug_info) . ', "bought_keys=" + Object.keys(boughtNumbers).length);';
-                        }
-                        ?>
-
-
+                        // Mark initial ranges as saved
+                        ranges.forEach(function(r, i) { if (r.inicio > 0 && r.fim >= r.inicio) _savedRanges[i] = true; });
 
                         function padNum(n) {
                             return String(n).padStart(pad, '0');
@@ -790,7 +746,6 @@ echo '<style>' .
 
                         function syncHiddenField() {
                             document.getElementById('cotas_rua_ranges_json').value = JSON.stringify(ranges);
-                            // Legacy compat
                             if (ranges.length > 0) {
                                 document.getElementById('cotas_rua_inicio_hidden').value = ranges[0].inicio;
                                 document.getElementById('cotas_rua_fim_hidden').value = ranges[0].fim;
@@ -800,74 +755,108 @@ echo '<style>' .
                             }
                         }
 
-                        var _visibleRanges = {};
+                        function saveRangesAjax(callback) {
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('POST', 'class/Main.php?action=save_cotas_rua_ranges', true);
+                            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                            xhr.onreadystatechange = function() {
+                                if (xhr.readyState === 4 && xhr.status === 200) {
+                                    try {
+                                        var resp = JSON.parse(xhr.responseText);
+                                        if (resp.status === 'success') {
+                                            boughtNumbers = resp.bought_numbers || {};
+                                            _rangeStats = {};
+                                            if (resp.range_stats) {
+                                                resp.range_stats.forEach(function(s, i) { _rangeStats[i] = s; });
+                                            }
+                                            if (resp.pad) pad = resp.pad;
+                                            ranges.forEach(function(r, i) { _savedRanges[i] = true; });
+                                        }
+                                        if (callback) callback(resp);
+                                    } catch(e) { alert('Erro ao salvar.'); }
+                                }
+                            };
+                            xhr.send('product_id=' + productId + '&ranges_json=' + encodeURIComponent(JSON.stringify(ranges)));
+                        }
 
-                        function renderBadgesForRange(idx) {
-                            var contId = 'range-badges-' + idx;
-                            var cont = document.getElementById(contId);
-                            if (!cont) return;
-                            cont.innerHTML = '';
+                        function openNumbersModal(idx) {
                             var r = ranges[idx];
-                            if (!r || r.fim < r.inicio) return;
+                            if (!r) return;
+                            var overlay = document.createElement('div');
+                            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;';
+                            var box = document.createElement('div');
+                            box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;max-width:600px;width:95%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);';
+                            var title = document.createElement('p');
+                            title.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:12px;color:#333;';
+                            title.textContent = 'Sequência ' + (idx+1) + ' — de ' + r.inicio + ' até ' + r.fim;
+                            box.appendChild(title);
+
+                            var legend = document.createElement('p');
+                            legend.style.cssText = 'font-size:11px;color:#a0aec0;margin-bottom:10px;';
+                            legend.innerHTML = '<span style="display:inline-block;width:12px;height:12px;background:#7e3af2;border-radius:3px;margin-right:4px;"></span>Reservado &nbsp;<span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:3px;margin-right:4px;margin-left:8px;"></span>Já comprado';
+                            box.appendChild(legend);
+
+                            var badgesWrap = document.createElement('div');
+                            badgesWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;overflow-y:auto;flex:1;padding:10px;background:rgba(0,0,0,0.03);border-radius:8px;border:1px solid #e2e8f0;';
                             for (var n = r.inicio; n <= r.fim; n++) {
                                 var num = padNum(n);
                                 var isBought = boughtNumbers.hasOwnProperty(num);
                                 var span = document.createElement('span');
                                 span.textContent = num;
-                                span.style.cssText = 'display:inline-block;border-radius:6px;padding:4px 10px;font-size:12px;font-family:monospace;font-weight:600;letter-spacing:0.5px;color:#fff;background:' + (isBought ? '#ef4444' : '#7e3af2') + ';';
-                                if (isBought) { span.title = 'Já comprado online'; }
-                                cont.appendChild(span);
+                                span.style.cssText = 'display:inline-block;border-radius:6px;padding:3px 8px;font-size:11px;font-family:monospace;font-weight:600;color:#fff;background:' + (isBought ? '#ef4444' : '#7e3af2') + ';';
+                                badgesWrap.appendChild(span);
                             }
-                            cont.style.display = 'flex';
-                            document.getElementById('legenda-cotas-rua').style.display = 'block';
+                            box.appendChild(badgesWrap);
+
+                            var btnClose = document.createElement('button');
+                            btnClose.type = 'button';
+                            btnClose.textContent = 'Fechar';
+                            btnClose.style.cssText = 'margin-top:14px;padding:10px;background:#e2e8f0;color:#333;border:none;border-radius:8px;font-size:14px;cursor:pointer;';
+                            btnClose.addEventListener('click', function() { document.body.removeChild(overlay); });
+                            box.appendChild(btnClose);
+                            overlay.appendChild(box);
+                            overlay.addEventListener('click', function(e) { if (e.target === overlay) document.body.removeChild(overlay); });
+                            document.body.appendChild(overlay);
                         }
 
                         function renderRanges() {
                             var list = document.getElementById('rua-ranges-list');
                             list.innerHTML = '';
-                            var hasAny = false;
                             ranges.forEach(function(r, idx) {
                                 var count = (r.fim >= r.inicio && r.inicio > 0) ? (r.fim - r.inicio + 1) : 0;
+                                var isSaved = !!_savedRanges[idx];
+                                var stats = _rangeStats[idx];
+
                                 var block = document.createElement('div');
                                 block.style.cssText = 'border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:8px;background:#fafafa;';
 
-                                // Header row: title + inputs + remove
-                                var header = document.createElement('div');
-                                header.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
-                                header.innerHTML = '<label style="font-size:14px;font-weight:600;color:#4a5568;">Sequência ' + (idx+1) + '</label>' +
+                                // Row 1: inputs
+                                var row1 = document.createElement('div');
+                                row1.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+                                row1.innerHTML = '<label style="font-size:14px;font-weight:600;color:#4a5568;">Sequência ' + (idx+1) + '</label>' +
                                     ' <span style="font-size:12px;color:#a0aec0;">de</span> ' +
-                                    '<input type="number" min="0" placeholder="Início" value="' + r.inicio + '" style="width:120px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="inicio">' +
+                                    '<input type="number" min="0" placeholder="Início" value="' + r.inicio + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="inicio">' +
                                     ' <span style="font-size:12px;color:#a0aec0;">até</span> ' +
-                                    '<input type="number" min="0" placeholder="Fim" value="' + r.fim + '" style="width:120px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="fim">';
+                                    '<input type="number" min="0" placeholder="Fim" value="' + r.fim + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="fim">';
 
-                                if (count > 0) {
-                                    var info = document.createElement('span');
-                                    info.style.cssText = 'font-size:11px;color:#a0aec0;margin-left:4px;';
-                                    info.textContent = '(' + count.toLocaleString() + ' números)';
-                                    header.appendChild(info);
-                                }
-                                if (count > 20000) {
-                                    var warn = document.createElement('span');
-                                    warn.style.cssText = 'font-size:11px;color:#ef4444;font-weight:600;';
-                                    warn.textContent = '⚠ Máx. 20.000!';
-                                    header.appendChild(warn);
-                                }
                                 if (ranges.length > 1) {
                                     var del = document.createElement('button');
                                     del.type = 'button';
-                                    del.textContent = '✕ Remover';
-                                    del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin-left:auto;';
+                                    del.textContent = '✕';
+                                    del.title = 'Remover sequência';
+                                    del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;';
                                     del.addEventListener('click', (function(i) { return function() {
-                                        delete _visibleRanges[i];
+                                        delete _savedRanges[i];
+                                        delete _rangeStats[i];
                                         ranges.splice(i, 1);
                                         syncHiddenField();
                                         renderRanges();
                                     }; })(idx));
-                                    header.appendChild(del);
+                                    row1.appendChild(del);
                                 }
 
                                 // Input change handlers
-                                header.querySelectorAll('input').forEach(function(inp) {
+                                row1.querySelectorAll('input').forEach(function(inp) {
                                     inp.addEventListener('change', function() {
                                         var i = parseInt(this.dataset.idx);
                                         ranges[i][this.dataset.field] = parseInt(this.value) || 0;
@@ -876,43 +865,96 @@ echo '<style>' .
                                             alert('Cada sequência pode ter no máximo 20.000 números!');
                                             ranges[i].fim = ranges[i].inicio + 19999;
                                         }
-                                        delete _visibleRanges[i];
+                                        delete _savedRanges[i];
+                                        delete _rangeStats[i];
                                         syncHiddenField();
                                         renderRanges();
                                     });
                                 });
+                                block.appendChild(row1);
 
-                                block.appendChild(header);
-
-                                // Ver números button + badges container (only if range valid)
+                                // Row 2: stats + buttons
                                 if (count > 0) {
-                                    hasAny = true;
-                                    var btnVer = document.createElement('button');
-                                    btnVer.type = 'button';
-                                    btnVer.textContent = '👁 Ver números da Sequência ' + (idx+1);
-                                    btnVer.style.cssText = 'margin-top:10px;padding:7px 14px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;';
-                                    if (_visibleRanges[idx]) { btnVer.style.display = 'none'; }
-                                    btnVer.addEventListener('click', (function(i) { return function() {
-                                        _visibleRanges[i] = true;
-                                        this.style.display = 'none';
-                                        renderBadgesForRange(i);
-                                    }; })(idx));
-                                    block.appendChild(btnVer);
+                                    var row2 = document.createElement('div');
+                                    row2.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;';
 
-                                    var badgesCont = document.createElement('div');
-                                    badgesCont.id = 'range-badges-' + idx;
-                                    badgesCont.style.cssText = 'display:none;flex-wrap:wrap;gap:6px;max-height:320px;overflow-y:auto;padding:12px;background:rgba(0,0,0,0.04);border-radius:8px;border:1px solid #e2e8f0;margin-top:10px;';
-                                    block.appendChild(badgesCont);
-
-                                    // If already visible, render badges
-                                    if (_visibleRanges[idx]) {
-                                        setTimeout((function(i) { return function() { renderBadgesForRange(i); }; })(idx), 0);
+                                    // Stats
+                                    if (stats) {
+                                        var statsEl = document.createElement('span');
+                                        statsEl.style.cssText = 'font-size:12px;color:#718096;';
+                                        statsEl.innerHTML = '<b>' + stats.total + '</b> números · <b style="color:#ef4444;">' + stats.bought + '</b> comprados · <b style="color:#7e3af2;">' + stats.reserved + '</b> reservados';
+                                        row2.appendChild(statsEl);
+                                    } else {
+                                        var statsEl = document.createElement('span');
+                                        statsEl.style.cssText = 'font-size:12px;color:#a0aec0;';
+                                        statsEl.textContent = count.toLocaleString() + ' números';
+                                        row2.appendChild(statsEl);
                                     }
+
+                                    // Salvar Sequência button (if not saved)
+                                    if (!isSaved) {
+                                        var btnSave = document.createElement('button');
+                                        btnSave.type = 'button';
+                                        btnSave.textContent = '💾 Salvar Sequência';
+                                        btnSave.style.cssText = 'padding:6px 14px;background:#7e3af2;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;';
+                                        btnSave.addEventListener('click', (function(i) { return function() {
+                                            // Check for bought numbers in this range
+                                            var r = ranges[i];
+                                            var boughtCount = 0;
+                                            for (var n = r.inicio; n <= r.fim; n++) {
+                                                if (boughtNumbers.hasOwnProperty(padNum(n))) boughtCount++;
+                                            }
+                                            if (boughtCount > 0) {
+                                                document.getElementById('modal-rua-msg').innerHTML =
+                                                    'A Sequência ' + (i+1) + ' contém <strong>' + boughtCount + ' número(s)</strong> que já foram comprados online.' +
+                                                    '<br><br>Eles continuarão pertencendo ao comprador. Os demais ficam reservados para a rua.';
+                                                document.getElementById('modal-rua-confirmacao').style.display = 'flex';
+                                                document.getElementById('btn-rua-confirmar').onclick = function() {
+                                                    document.getElementById('modal-rua-confirmacao').style.display = 'none';
+                                                    doSave();
+                                                };
+                                            } else {
+                                                doSave();
+                                            }
+                                            function doSave() {
+                                                btnSave.disabled = true;
+                                                btnSave.textContent = 'Salvando...';
+                                                saveRangesAjax(function(resp) {
+                                                    if (resp.status === 'success') {
+                                                        renderRanges();
+                                                    } else {
+                                                        alert(resp.error || 'Erro ao salvar.');
+                                                        btnSave.disabled = false;
+                                                        btnSave.textContent = '💾 Salvar Sequência';
+                                                    }
+                                                });
+                                            }
+                                        }; })(idx));
+                                        row2.appendChild(btnSave);
+                                    }
+
+                                    // Ver Números button (only if saved)
+                                    if (isSaved) {
+                                        var btnVer = document.createElement('button');
+                                        btnVer.type = 'button';
+                                        btnVer.textContent = '👁 Ver Números';
+                                        btnVer.style.cssText = 'padding:6px 14px;background:#4a5568;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;';
+                                        btnVer.addEventListener('click', (function(i) { return function() {
+                                            // If we don't have boughtNumbers from server yet, fetch first
+                                            if (Object.keys(boughtNumbers).length === 0 && productId > 0) {
+                                                saveRangesAjax(function() { openNumbersModal(i); });
+                                            } else {
+                                                openNumbersModal(i);
+                                            }
+                                        }; })(idx));
+                                        row2.appendChild(btnVer);
+                                    }
+
+                                    block.appendChild(row2);
                                 }
 
                                 list.appendChild(block);
                             });
-                            document.getElementById('legenda-cotas-rua').style.display = hasAny ? 'block' : 'none';
                         }
 
                         document.getElementById('btn-add-range').addEventListener('click', function() {
@@ -921,40 +963,17 @@ echo '<style>' .
                             renderRanges();
                         });
 
-                        // Interceptar o form submit para checar confirmação
-                        var _pendingConfirm = false;
-                        var _formTarget = null;
-                        document.getElementById('product-form').addEventListener('submit', function(e) {
-                            if (_pendingConfirm || productId == 0) return;
-                            var boughtInRange = [];
-                            ranges.forEach(function(r) {
-                                for (var n = r.inicio; n <= r.fim; n++) {
-                                    var num = padNum(n);
-                                    if (boughtNumbers.hasOwnProperty(num)) boughtInRange.push(num);
-                                }
-                            });
-                            if (boughtInRange.length > 0) {
-                                e.preventDefault();
-                                _formTarget = this;
-                                document.getElementById('modal-rua-msg').innerHTML =
-                                    'Existem <strong>' + boughtInRange.length + ' número(s)</strong> dentro das sequências configuradas que já foram comprados online.' +
-                                    '<br><br>Mesmo assim, todos os números das sequências estarão protegidos: os já comprados continuarão pertencendo ao comprador, e os demais ficam reservados para a rua.';
-                                document.getElementById('modal-rua-confirmacao').style.display = 'flex';
-                            }
-                        });
-
-                        document.getElementById('btn-rua-confirmar').addEventListener('click', function() {
-                            document.getElementById('modal-rua-confirmacao').style.display = 'none';
-                            _pendingConfirm = true;
-                            if (_formTarget) _formTarget.submit();
-                        });
                         document.getElementById('btn-rua-cancelar').addEventListener('click', function() {
                             document.getElementById('modal-rua-confirmacao').style.display = 'none';
                         });
 
-                        // Init
-                        if (ranges.length === 0) ranges.push({ inicio: 0, fim: 0 });
-                        renderRanges();
+                        // Carregar stats iniciais se já tem ranges salvos
+                        if (productId > 0 && ranges.length > 0 && ranges[0].inicio > 0) {
+                            saveRangesAjax(function() { renderRanges(); });
+                        } else {
+                            if (ranges.length === 0) ranges.push({ inicio: 0, fim: 0 });
+                            renderRanges();
+                        }
                     })();
                     </script>
                 </div>
