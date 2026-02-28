@@ -81,7 +81,7 @@ echo '<style>' .
 <main class="h-full pb-16 overflow-y-auto">
     <div class="container px-6 mx-auto grid">
         <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v5</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
+            <?= isset($id) ? 'Atualizar campanha <span style="font-size:12px;color:#a0aec0;font-weight:normal;">v6</span> <a href="./?page=products/manage_product" id="create_new"><button class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Criar novo</button></a>' : 'Nova campanha' ?>
         </h2>
         <div class="px-4 py-3 mb-8 bg-white rounded-lg shadow-md dark:bg-gray-800">
             <div class="flex">
@@ -725,13 +725,9 @@ echo '<style>' .
                         </div>
                     </div>
 
-                    <!-- Lista de cotas reservadas com badges coloridos -->
-                    <div id="lista-cotas-rua-wrap" class="mt-6" style="display:none;">
-                        <hr class="mb-4 border-gray-300 dark:border-gray-600">
-                        <p class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">📋 Números reservados</p>
-                        <button type="button" id="btn-ver-numeros" style="display:none;margin-bottom:10px;padding:8px 16px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">👁 Ver todos os números</button>
-                        <div id="lista-cotas-rua-badges" style="display:flex;flex-wrap:wrap;gap:6px;max-height:320px;overflow-y:auto;padding:12px;background:rgba(0,0,0,0.04);border-radius:8px;border:1px solid #e2e8f0;"></div>
-                        <p class="mt-2" style="font-size:11px;color:#a0aec0;">
+                    <!-- Legenda de cores (fora do bloco por range) -->
+                    <div id="legenda-cotas-rua" class="mt-4" style="display:none;">
+                        <p style="font-size:11px;color:#a0aec0;">
                             <span style="display:inline-block;width:12px;height:12px;background:#7e3af2;border-radius:3px;margin-right:4px;"></span>Livre para a rua &nbsp;
                             <span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:3px;margin-right:4px;margin-left:8px;"></span>Já comprado online
                         </p>
@@ -804,90 +800,119 @@ echo '<style>' .
                             }
                         }
 
-                        var _badgesVisible = false;
+                        var _visibleRanges = {};
 
-                        function renderBadges() {
-                            var wrap = document.getElementById('lista-cotas-rua-wrap');
-                            var cont = document.getElementById('lista-cotas-rua-badges');
-                            var btnVer = document.getElementById('btn-ver-numeros');
+                        function renderBadgesForRange(idx) {
+                            var contId = 'range-badges-' + idx;
+                            var cont = document.getElementById(contId);
+                            if (!cont) return;
                             cont.innerHTML = '';
-                            var totalNums = 0;
-                            ranges.forEach(function(r) { if (r.fim >= r.inicio) totalNums += (r.fim - r.inicio) + 1; });
-                            if (ranges.length === 0 || totalNums === 0) { wrap.style.display = 'none'; return; }
-                            wrap.style.display = 'block';
-                            // Não renderizar badges até o usuário clicar
-                            if (!_badgesVisible) {
-                                btnVer.style.display = 'inline-block';
-                                btnVer.textContent = '👁 Ver todos os ' + totalNums + ' números';
-                                return;
+                            var r = ranges[idx];
+                            if (!r || r.fim < r.inicio) return;
+                            for (var n = r.inicio; n <= r.fim; n++) {
+                                var num = padNum(n);
+                                var isBought = boughtNumbers.hasOwnProperty(num);
+                                var span = document.createElement('span');
+                                span.textContent = num;
+                                span.style.cssText = 'display:inline-block;border-radius:6px;padding:4px 10px;font-size:12px;font-family:monospace;font-weight:600;letter-spacing:0.5px;color:#fff;background:' + (isBought ? '#ef4444' : '#7e3af2') + ';';
+                                if (isBought) { span.title = 'Já comprado online'; }
+                                cont.appendChild(span);
                             }
-                            btnVer.style.display = 'none';
-                            ranges.forEach(function(r) {
-                                for (var n = r.inicio; n <= r.fim; n++) {
-                                    var num = padNum(n);
-                                    var isBought = boughtNumbers.hasOwnProperty(num);
-                                    var span = document.createElement('span');
-                                    span.textContent = num;
-                                    span.style.cssText = 'display:inline-block;border-radius:6px;padding:4px 10px;font-size:12px;font-family:monospace;font-weight:600;letter-spacing:0.5px;color:#fff;background:' + (isBought ? '#ef4444' : '#7e3af2') + ';';
-                                    if (isBought) { span.title = 'Já comprado online'; }
-                                    cont.appendChild(span);
-                                }
-                            });
+                            cont.style.display = 'flex';
+                            document.getElementById('legenda-cotas-rua').style.display = 'block';
                         }
 
                         function renderRanges() {
                             var list = document.getElementById('rua-ranges-list');
                             list.innerHTML = '';
+                            var hasAny = false;
                             ranges.forEach(function(r, idx) {
-                                var row = document.createElement('div');
-                                row.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
-                                row.innerHTML = '<label style="font-size:13px;color:#718096;">Sequência ' + (idx+1) + '</label>' +
+                                var count = (r.fim >= r.inicio && r.inicio > 0) ? (r.fim - r.inicio + 1) : 0;
+                                var block = document.createElement('div');
+                                block.style.cssText = 'border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:8px;background:#fafafa;';
+
+                                // Header row: title + inputs + remove
+                                var header = document.createElement('div');
+                                header.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+                                header.innerHTML = '<label style="font-size:14px;font-weight:600;color:#4a5568;">Sequência ' + (idx+1) + '</label>' +
+                                    ' <span style="font-size:12px;color:#a0aec0;">de</span> ' +
                                     '<input type="number" min="0" placeholder="Início" value="' + r.inicio + '" style="width:120px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="inicio">' +
-                                    '<span style="color:#a0aec0;">→</span>' +
+                                    ' <span style="font-size:12px;color:#a0aec0;">até</span> ' +
                                     '<input type="number" min="0" placeholder="Fim" value="' + r.fim + '" style="width:120px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="fim">';
+
+                                if (count > 0) {
+                                    var info = document.createElement('span');
+                                    info.style.cssText = 'font-size:11px;color:#a0aec0;margin-left:4px;';
+                                    info.textContent = '(' + count.toLocaleString() + ' números)';
+                                    header.appendChild(info);
+                                }
+                                if (count > 20000) {
+                                    var warn = document.createElement('span');
+                                    warn.style.cssText = 'font-size:11px;color:#ef4444;font-weight:600;';
+                                    warn.textContent = '⚠ Máx. 20.000!';
+                                    header.appendChild(warn);
+                                }
                                 if (ranges.length > 1) {
                                     var del = document.createElement('button');
                                     del.type = 'button';
                                     del.textContent = '✕ Remover';
-                                    del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;';
-                                    del.addEventListener('click', function() {
-                                        ranges.splice(idx, 1);
+                                    del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;margin-left:auto;';
+                                    del.addEventListener('click', (function(i) { return function() {
+                                        delete _visibleRanges[i];
+                                        ranges.splice(i, 1);
                                         syncHiddenField();
                                         renderRanges();
-                                        renderBadges();
-                                    });
-                                    row.appendChild(del);
+                                    }; })(idx));
+                                    header.appendChild(del);
                                 }
-                                // Mostrar contagem e validação de 20k
-                                var count = (r.fim >= r.inicio) ? (r.fim - r.inicio + 1) : 0;
-                                var info = document.createElement('span');
-                                info.style.cssText = 'font-size:11px;color:#a0aec0;';
-                                info.textContent = count > 0 ? count.toLocaleString() + ' números' : '';
-                                row.appendChild(info);
-                                if (count > 20000) {
-                                    var warn = document.createElement('span');
-                                    warn.style.cssText = 'font-size:11px;color:#ef4444;font-weight:600;';
-                                    warn.textContent = '⚠ Máx. 20.000 por sequência!';
-                                    row.appendChild(warn);
-                                }
-                                row.querySelectorAll('input').forEach(function(inp) {
+
+                                // Input change handlers
+                                header.querySelectorAll('input').forEach(function(inp) {
                                     inp.addEventListener('change', function() {
                                         var i = parseInt(this.dataset.idx);
                                         ranges[i][this.dataset.field] = parseInt(this.value) || 0;
-                                        // Validar limite de 20k
                                         var rr = ranges[i];
                                         if (rr.fim >= rr.inicio && (rr.fim - rr.inicio + 1) > 20000) {
                                             alert('Cada sequência pode ter no máximo 20.000 números!');
                                             ranges[i].fim = ranges[i].inicio + 19999;
                                         }
-                                        _badgesVisible = false;
+                                        delete _visibleRanges[i];
                                         syncHiddenField();
                                         renderRanges();
-                                        renderBadges();
                                     });
                                 });
-                                list.appendChild(row);
+
+                                block.appendChild(header);
+
+                                // Ver números button + badges container (only if range valid)
+                                if (count > 0) {
+                                    hasAny = true;
+                                    var btnVer = document.createElement('button');
+                                    btnVer.type = 'button';
+                                    btnVer.textContent = '👁 Ver números da Sequência ' + (idx+1);
+                                    btnVer.style.cssText = 'margin-top:10px;padding:7px 14px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;';
+                                    if (_visibleRanges[idx]) { btnVer.style.display = 'none'; }
+                                    btnVer.addEventListener('click', (function(i) { return function() {
+                                        _visibleRanges[i] = true;
+                                        this.style.display = 'none';
+                                        renderBadgesForRange(i);
+                                    }; })(idx));
+                                    block.appendChild(btnVer);
+
+                                    var badgesCont = document.createElement('div');
+                                    badgesCont.id = 'range-badges-' + idx;
+                                    badgesCont.style.cssText = 'display:none;flex-wrap:wrap;gap:6px;max-height:320px;overflow-y:auto;padding:12px;background:rgba(0,0,0,0.04);border-radius:8px;border:1px solid #e2e8f0;margin-top:10px;';
+                                    block.appendChild(badgesCont);
+
+                                    // If already visible, render badges
+                                    if (_visibleRanges[idx]) {
+                                        setTimeout((function(i) { return function() { renderBadgesForRange(i); }; })(idx), 0);
+                                    }
+                                }
+
+                                list.appendChild(block);
                             });
+                            document.getElementById('legenda-cotas-rua').style.display = hasAny ? 'block' : 'none';
                         }
 
                         document.getElementById('btn-add-range').addEventListener('click', function() {
@@ -901,7 +926,6 @@ echo '<style>' .
                         var _formTarget = null;
                         document.getElementById('product-form').addEventListener('submit', function(e) {
                             if (_pendingConfirm || productId == 0) return;
-                            // Verificar se algum número comprado está dentro dos ranges
                             var boughtInRange = [];
                             ranges.forEach(function(r) {
                                 for (var n = r.inicio; n <= r.fim; n++) {
@@ -912,11 +936,10 @@ echo '<style>' .
                             if (boughtInRange.length > 0) {
                                 e.preventDefault();
                                 _formTarget = this;
-                                var modal = document.getElementById('modal-rua-confirmacao');
                                 document.getElementById('modal-rua-msg').innerHTML =
                                     'Existem <strong>' + boughtInRange.length + ' número(s)</strong> dentro das sequências configuradas que já foram comprados online.' +
                                     '<br><br>Mesmo assim, todos os números das sequências estarão protegidos: os já comprados continuarão pertencendo ao comprador, e os demais ficam reservados para a rua.';
-                                modal.style.display = 'flex';
+                                document.getElementById('modal-rua-confirmacao').style.display = 'flex';
                             }
                         });
 
@@ -929,16 +952,9 @@ echo '<style>' .
                             document.getElementById('modal-rua-confirmacao').style.display = 'none';
                         });
 
-                        // Botão Ver Todos
-                        document.getElementById('btn-ver-numeros').addEventListener('click', function() {
-                            _badgesVisible = true;
-                            renderBadges();
-                        });
-
                         // Init
                         if (ranges.length === 0) ranges.push({ inicio: 0, fim: 0 });
                         renderRanges();
-                        renderBadges();
                     })();
                     </script>
                 </div>
