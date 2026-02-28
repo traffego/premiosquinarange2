@@ -751,11 +751,20 @@ echo '<style>' .
                             $allBought = [];
                             while ($rua_row = $rua_orders->fetch_assoc()) {
                                 $parts = array_filter(explode(',', $rua_row['order_numbers']));
-                                foreach ($parts as $p) { $allBought[] = trim($p); }
+                                foreach ($parts as $p) {
+                                    $p = trim($p);
+                                    if ($p !== '') {
+                                        // Normaliza zero-padding igual ao padNum() do JS
+                                        $key = str_pad((int)$p, $pad, '0', STR_PAD_LEFT);
+                                        $allBought[$key] = true;
+                                    }
+                                }
                             }
-                            echo 'boughtNumbers = ' . json_encode(array_fill_keys($allBought, true)) . ';';
+                            // (object) garante JSON objeto {} mesmo quando vazio
+                            echo 'boughtNumbers = ' . json_encode((object)$allBought) . ';';
                         }
                         ?>
+
 
                         function padNum(n) {
                             return String(n).padStart(pad, '0');
