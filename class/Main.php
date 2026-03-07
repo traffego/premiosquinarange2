@@ -1779,9 +1779,17 @@ class Main extends DBConnection
                         $cotas_vendidas[] = $cotas_premiadas;
                     }
 
-                    $all_lucky_numbers = array_filter(array_map('trim', array_merge(...array_map(function ($cota) {
-                        return explode(',', $cota);
-                    }, $cotas_vendidas))));
+                    $all_lucky_numbers = [];
+                    if (!empty($cotas_vendidas)) {
+                        $raw_parts = [];
+                        foreach ($cotas_vendidas as $_cv) {
+                            foreach (explode(',', $_cv) as $_p) {
+                                $_p = trim($_p);
+                                if ($_p !== '') $raw_parts[] = $_p;
+                            }
+                        }
+                        $all_lucky_numbers = $raw_parts;
+                    }
                     if ($qty_numbers < $total_numbers_generated + count($all_lucky_numbers) - 1) {
                         $resp["status"] = "failed";
                         $resp["error"] = "[DP01] - Erro ao criar pedido, selecione uma quantidade menor.";
@@ -1792,8 +1800,12 @@ class Main extends DBConnection
                         return $resp;
                     }
 
+                    // Calcular padding (globos) — igual ao save_cotas_rua_ranges: strlen(qty_numbers - 1)
+                    // Aqui $qty_numbers ja e original menos 1 (decrementado antes)
+                    $globos = strlen((string)($qty_numbers));
+
                     // Carregar ranges de cotas de rua para excluir da geração automática
-                    $_rua_auto_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+                    $_rua_auto_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . (int)$product_id . '\'')->fetch_assoc();
                     $_rua_ranges_auto = [];
                     if (!empty($_rua_auto_data['cotas_rua_ranges'])) {
                         $_decoded_auto = json_decode($_rua_auto_data['cotas_rua_ranges'], true);
@@ -1804,19 +1816,17 @@ class Main extends DBConnection
                     if (empty($_rua_ranges_auto) && !empty($_rua_auto_data['cotas_rua_inicio']) && !empty($_rua_auto_data['cotas_rua_fim'])) {
                         $_rua_ranges_auto = [['inicio' => (int)$_rua_auto_data['cotas_rua_inicio'], 'fim' => (int)$_rua_auto_data['cotas_rua_fim']]];
                     }
-                    $numeros_rua_auto = [];
-                    if (!empty($_rua_ranges_auto)) {
-                        foreach ($_rua_ranges_auto as $_ra) {
-                            for ($r = (int)$_ra['inicio']; $r <= (int)$_ra['fim']; $r++) {
-                                $numeros_rua_auto[] = str_pad($r, strlen((string)($qty_numbers)), '0', STR_PAD_LEFT);
-                            }
+
+                    // Montar set de proibidos: numeros ja vendidos + cotas de rua
+                    $sold_numbers_set = [];
+                    foreach ($all_lucky_numbers as $_n) {
+                        $sold_numbers_set[$_n] = true;
+                    }
+                    foreach ($_rua_ranges_auto as $_ra) {
+                        for ($r = (int)$_ra['inicio']; $r <= (int)$_ra['fim']; $r++) {
+                            $sold_numbers_set[str_pad($r, $globos, '0', STR_PAD_LEFT)] = true;
                         }
                     }
-
-                    // Ensure $all_lucky_numbers contains integers
-                    $sold_numbers_set = array_flip(array_merge($all_lucky_numbers, $numeros_rua_auto));
-                    $numeris = [];
-                    $globos = strlen((string) ($qty_numbers));
 
                     while (count($numeris) < $total_numbers_generated) {
                         $random_number = mt_rand(0, $qty_numbers);

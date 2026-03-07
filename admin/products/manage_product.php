@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // v3.0 - Cotas de rua: múltiplos ranges, preview stats, validação de interseção, modal de sequência não salva, pq?
 
 if (isset($_GET['id']) && 0 < $_GET['id']) {
@@ -971,21 +971,25 @@ echo '<style>' .
                                 }; })(idx));
                                 row1.appendChild(btnSave);
 
-                                if (ranges.length > 1) {
-                                    var del = document.createElement('button');
-                                    del.type = 'button';
-                                    del.textContent = '✕';
-                                    del.title = 'Remover sequência';
-                                    del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;';
-                                    del.addEventListener('click', (function(i) { return function() {
-                                        delete _savedRanges[i];
-                                        delete _rangeStats[i];
-                                        ranges.splice(i, 1);
-                                        syncHiddenField();
-                                        renderRanges();
-                                    }; })(idx));
-                                    row1.appendChild(del);
-                                }
+                                var del = document.createElement('button');
+                                del.type = 'button';
+                                del.textContent = '✕';
+                                del.title = 'Remover sequência';
+                                del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;';
+                                del.addEventListener('click', (function(i) { return function() {
+                                    delete _savedRanges[i];
+                                    delete _rangeStats[i];
+                                    ranges.splice(i, 1);
+                                    syncHiddenField();
+                                    if (ranges.length === 0) {
+                                        // Salva o array vazio no banco para limpar o bloqueio
+                                        saveRangesAjax(function() {});
+                                        // Adiciona uma linha vazia para o admin poder redigitar
+                                        ranges.push({inicio: 0, fim: 0});
+                                    }
+                                    renderRanges();
+                                }; })(idx));
+                                row1.appendChild(del);
 
                                 // Input change handlers — preview stats on change
                                 row1.querySelectorAll('input').forEach(function(inp) {
