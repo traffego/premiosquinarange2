@@ -1,5 +1,5 @@
 <?php
-// v3.0 - Cotas de rua: múltiplos ranges, preview stats, validação de interseção, modal de sequência não salva
+// v3.0 - Cotas de rua: múltiplos ranges, preview stats, validação de interseção, modal de sequência não salva, pq?
 
 if (isset($_GET['id']) && 0 < $_GET['id']) {
     $qry = $conn->query('SELECT * from `product_list` where id = \'' . $_GET['id'] . '\' ');
@@ -16,6 +16,7 @@ if (isset($_GET['id']) && 0 < $_GET['id']) {
     .can-toggle label .can-toggle__switch {
         height: 41.46px !important;
         margin-top: 4px !important;
+         
     }
 
     .can-toggle label .can-toggle__switch:before {
