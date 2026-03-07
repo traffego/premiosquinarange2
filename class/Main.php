@@ -1828,6 +1828,7 @@ class Main extends DBConnection
                         }
                     }
 
+                    $numeris = [];
                     while (count($numeris) < $total_numbers_generated) {
                         $random_number = mt_rand(0, $qty_numbers);
                         $padded_number = str_pad($random_number, $globos, "0", STR_PAD_LEFT);
