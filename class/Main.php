@@ -1675,6 +1675,42 @@ class Main extends DBConnection
                     $arrValues = array_filter(
                         explode(",", implode(",", $cotas_vendidas))
                     );
+
+                    // Verificar se os números escolhidos estão no range de cotas de rua
+                    $_rua_check_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+                    $_rua_ranges_manual = [];
+                    if (!empty($_rua_check_data['cotas_rua_ranges'])) {
+                        $_decoded_manual = json_decode($_rua_check_data['cotas_rua_ranges'], true);
+                        if (is_array($_decoded_manual) && count($_decoded_manual) > 0) {
+                            $_rua_ranges_manual = $_decoded_manual;
+                        }
+                    }
+                    if (empty($_rua_ranges_manual) && !empty($_rua_check_data['cotas_rua_inicio']) && !empty($_rua_check_data['cotas_rua_fim'])) {
+                        $_rua_ranges_manual = [['inicio' => (int)$_rua_check_data['cotas_rua_inicio'], 'fim' => (int)$_rua_check_data['cotas_rua_fim']]];
+                    }
+                    if (!empty($_rua_ranges_manual)) {
+                        $numeros_bloqueados_manual = [];
+                        foreach ($numbers as $num) {
+                            $num_int = (int)$num;
+                            foreach ($_rua_ranges_manual as $_rm) {
+                                if ($num_int >= (int)$_rm['inicio'] && $num_int <= (int)$_rm['fim']) {
+                                    $numeros_bloqueados_manual[] = $num;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!empty($numeros_bloqueados_manual)) {
+                            $bloqueados_str = implode(',', $numeros_bloqueados_manual);
+                            $resp['status'] = 'failed';
+                            $resp['error'] = (count($numeros_bloqueados_manual) > 1 ? 'Os números ' . $bloqueados_str . ' estão reservados para venda presencial.' : 'O número ' . $bloqueados_str . ' está reservado para venda presencial.');
+                            $this->conn->query('DELETE FROM `order_list` where code = \'' . $code . '\'');
+                            $this->conn->query('UPDATE `product_list` SET `pending_numbers` = `pending_numbers` - \'' . $total_numbers_generated . '\' WHERE `id` = \'' . $product_id . '\'');
+                            flock($lock, LOCK_UN);
+                            fclose($lock);
+                            return json_encode($resp);
+                        }
+                    }
+
                     $result = $this->is_in_array($numbers, $arrValues);
 
                     if ($result) {
@@ -1756,8 +1792,29 @@ class Main extends DBConnection
                         return $resp;
                     }
 
+                    // Carregar ranges de cotas de rua para excluir da geração automática
+                    $_rua_auto_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+                    $_rua_ranges_auto = [];
+                    if (!empty($_rua_auto_data['cotas_rua_ranges'])) {
+                        $_decoded_auto = json_decode($_rua_auto_data['cotas_rua_ranges'], true);
+                        if (is_array($_decoded_auto) && count($_decoded_auto) > 0) {
+                            $_rua_ranges_auto = $_decoded_auto;
+                        }
+                    }
+                    if (empty($_rua_ranges_auto) && !empty($_rua_auto_data['cotas_rua_inicio']) && !empty($_rua_auto_data['cotas_rua_fim'])) {
+                        $_rua_ranges_auto = [['inicio' => (int)$_rua_auto_data['cotas_rua_inicio'], 'fim' => (int)$_rua_auto_data['cotas_rua_fim']]];
+                    }
+                    $numeros_rua_auto = [];
+                    if (!empty($_rua_ranges_auto)) {
+                        foreach ($_rua_ranges_auto as $_ra) {
+                            for ($r = (int)$_ra['inicio']; $r <= (int)$_ra['fim']; $r++) {
+                                $numeros_rua_auto[] = str_pad($r, strlen((string)($qty_numbers)), '0', STR_PAD_LEFT);
+                            }
+                        }
+                    }
+
                     // Ensure $all_lucky_numbers contains integers
-                    $sold_numbers_set = array_flip($all_lucky_numbers);
+                    $sold_numbers_set = array_flip(array_merge($all_lucky_numbers, $numeros_rua_auto));
                     $numeris = [];
                     $globos = strlen((string) ($qty_numbers));
 
