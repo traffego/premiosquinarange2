@@ -1030,7 +1030,7 @@ echo '<style>' .
                                     if (stats) {
                                         var statsEl = document.createElement('span');
                                         statsEl.style.cssText = 'font-size:12px;color:#718096;';
-                                        statsEl.innerHTML = '<b>' + stats.total + '</b> números Â· <b style="color:#ef4444;">' + stats.bought + '</b> comprados Â· <b style="color:#7e3af2;">' + stats.reserved + '</b> reservados';
+                                        statsEl.innerHTML = '<b>' + stats.total + '</b> números - <b style="color:#ef4444;">' + stats.bought + '</b> comprados - <b style="color:#7e3af2;">' + stats.reserved + '</b> reservados';
                                         row2.appendChild(statsEl);
                                     } else {
                                         var statsEl = document.createElement('span');
