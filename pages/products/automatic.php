@@ -84,40 +84,40 @@ if (!empty($order_numbers)) {
     $order_numbers = explode(',', $order_numbers);
     $order_numbers = array_filter($order_numbers);
 
-    $stmt = $conn->prepare('SELECT o.customer_id, c.firstname, c.lastname, o.date_created,c.phone
-                        FROM order_list o 
-                        INNER JOIN customer_list c ON o.customer_id = c.id 
-                        WHERE FIND_IN_SET(?, order_numbers) AND product_id = ? AND status = 2');
-    $order_number = max($order_numbers); // Ensure $order_numbers is an array or list
-    $stmt->bind_param('si', $order_number, $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+    if (!empty($order_numbers)) {
+        $stmt = $conn->prepare('SELECT o.customer_id, c.firstname, c.lastname, o.date_created,c.phone
+                            FROM order_list o 
+                            INNER JOIN customer_list c ON o.customer_id = c.id 
+                            WHERE FIND_IN_SET(?, order_numbers) AND product_id = ? AND status = 2');
+        $order_number = max($order_numbers);
+        $stmt->bind_param('si', $order_number, $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
 
-    if ($row) {
-        // Check if a row is fetched
-        $major['cota'] = $order_number;
-        $major['winner'] = $row['firstname'] . ' ' . $row['lastname'];
-        $major['date_created'] = date('d/m/Y H:i:s', strtotime($row['date_created']));
-        $major['phone'] = $row['phone'];
-    }
+        if ($row) {
+            $major['cota'] = $order_number;
+            $major['winner'] = $row['firstname'] . ' ' . $row['lastname'];
+            $major['date_created'] = date('d/m/Y H:i:s', strtotime($row['date_created']));
+            $major['phone'] = $row['phone'];
+        }
 
-    $stmt = $conn->prepare('SELECT o.customer_id, c.firstname, c.lastname, o.date_created, c.phone
-                        FROM order_list o 
-                        INNER JOIN customer_list c ON o.customer_id = c.id 
-                        WHERE FIND_IN_SET(?, order_numbers) AND product_id = ? AND status = 2');
-    $order_number = min($order_numbers); // Ensure $order_numbers is an array or list
-    $stmt->bind_param('si', $order_number, $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+        $stmt = $conn->prepare('SELECT o.customer_id, c.firstname, c.lastname, o.date_created, c.phone
+                            FROM order_list o 
+                            INNER JOIN customer_list c ON o.customer_id = c.id 
+                            WHERE FIND_IN_SET(?, order_numbers) AND product_id = ? AND status = 2');
+        $order_number = min($order_numbers);
+        $stmt->bind_param('si', $order_number, $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
 
-    if ($row) {
-        // Check if a row is fetched
-        $minor['cota'] = $order_number;
-        $minor['winner'] = $row['firstname'] . ' ' . $row['lastname'];
-        $minor['date_created'] = date('d/m/Y H:i:s', strtotime($row['date_created']));
-        $minor['phone'] = $row['phone'];
+        if ($row) {
+            $minor['cota'] = $order_number;
+            $minor['winner'] = $row['firstname'] . ' ' . $row['lastname'];
+            $minor['date_created'] = date('d/m/Y H:i:s', strtotime($row['date_created']));
+            $minor['phone'] = $row['phone'];
+        }
     }
 }
 
