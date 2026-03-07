@@ -718,7 +718,7 @@ echo '<style>' .
                     <!-- Confirmação modal -->
                     <div id="modal-rua-confirmacao" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
                         <div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
-                            <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">âš ï¸ Atenção</p>
+                            <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">⚠️ Atenção</p>
                             <p id="modal-rua-msg" style="font-size:14px;color:#555;margin-bottom:18px;"></p>
                             <div style="display:flex;gap:10px;">
                                 <button id="btn-rua-confirmar" type="button" style="flex:1;padding:10px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Reservar mesmo assim</button>
@@ -1022,7 +1022,7 @@ echo '<style>' .
                                     if (conflito >= 0) {
                                         var warnEl = document.createElement('span');
                                         warnEl.style.cssText = 'font-size:12px;color:#dc2626;font-weight:600;';
-                                        warnEl.textContent = 'âš ï¸ Sobrepõe com Sequência ' + (conflito+1);
+                                        warnEl.textContent = '⚠️ Sobrepõe com Sequência ' + (conflito+1);
                                         row2.appendChild(warnEl);
                                     }
 
@@ -1102,7 +1102,7 @@ echo '<style>' .
                 <!-- Modal: aviso de sequências não salvas -->
                 <div id="modal-unsaved-ranges" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
                     <div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
-                        <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">âš ï¸ Sequência não salva</p>
+                        <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">⚠️ Sequência não salva</p>
                         <p style="font-size:14px;color:#555;margin-bottom:18px;">Você tem sequências de cotas de rua que ainda <strong>não foram salvas</strong>. Vá até a aba "Cotas de rua" e clique em "💾 Salvar Sequência" antes de salvar o produto.</p>
                         <div style="display:flex;gap:10px;">
                             <button id="btn-unsaved-ok" type="button" style="flex:1;padding:10px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Entendi</button>
