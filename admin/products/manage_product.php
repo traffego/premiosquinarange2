@@ -865,7 +865,7 @@ echo '<style>' .
                             box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;max-width:600px;width:95%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);';
                             var title = document.createElement('p');
                             title.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:12px;color:#333;';
-                            title.textContent = 'Sequência ' + (idx+1) + ' â€” de ' + r.inicio + ' até ' + r.fim;
+                            title.textContent = 'Sequência ' + (idx+1) + ' — de ' + r.inicio + ' até ' + r.fim;
                             box.appendChild(title);
 
                             var legend = document.createElement('p');
@@ -917,7 +917,7 @@ echo '<style>' .
                                     ' <span style="font-size:12px;color:#a0aec0;">até</span> ' +
                                     '<input type="number" min="0" placeholder="Fim" value="' + r.fim + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="fim">';
 
-                                // Botão Salvar â€” sempre visível em cada linha
+                                // Botão Salvar — sempre visível em cada linha
                                 var btnSave = document.createElement('button');
                                 btnSave.type = 'button';
                                 if (isSaved) {
@@ -963,7 +963,7 @@ echo '<style>' .
                                             } else {
                                                 alert(resp.error || 'Erro ao salvar.');
                                                 btnSave.disabled = false;
-                                                btnSave.textContent = 'ðŸ’¾ Salvar';
+                                                btnSave.textContent = '💾 Salvar';
                                                 btnSave.style.background = '#7e3af2';
                                             }
                                         });
@@ -987,7 +987,7 @@ echo '<style>' .
                                     row1.appendChild(del);
                                 }
 
-                                // Input change handlers â€” preview stats on change
+                                // Input change handlers — preview stats on change
                                 row1.querySelectorAll('input').forEach(function(inp) {
                                     inp.addEventListener('change', function() {
                                         var i = parseInt(this.dataset.idx);
@@ -1039,7 +1039,7 @@ echo '<style>' .
                                         row2.appendChild(statsEl);
                                     }
 
-                                    // Salvar Sequência button (if not saved) â€” removido daqui, agora fica na Row 1
+                                    // Salvar Sequência button (if not saved) — removido daqui, agora fica na Row 1
 
                                     // Ver Números button (available when stats loaded, even before saving)
                                     if (stats) {
