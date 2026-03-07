@@ -36,6 +36,7 @@ class Master extends DBConnection
 		$name = $this->conn->real_escape_string(filter_var($_POST['name'], FILTER_SANITIZE_SPECIAL_CHARS));
 		$description = $this->conn->real_escape_string(filter_var($_POST['description'], FILTER_SANITIZE_SPECIAL_CHARS));
 		$type_of_draw = $this->conn->real_escape_string($_POST['type_of_draw']);
+		// testando comentário
 		$qty_numbers = $this->conn->real_escape_string($_POST['qty_numbers']);
 
 		if ($type_of_draw == 3) {
