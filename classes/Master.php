@@ -825,15 +825,27 @@ error_reporting(1);
 				$arrValues = array_filter(explode(',', implode(',', $cotas_vendidas)));
 
 				// Verificar se os números escolhidos estão no range de cotas de rua
-				$cotas_rua_check = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, qty_numbers FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
-				if (!empty($cotas_rua_check['cotas_rua_inicio']) && !empty($cotas_rua_check['cotas_rua_fim'])) {
-					$rua_inicio = (int)$cotas_rua_check['cotas_rua_inicio'];
-					$rua_fim = (int)$cotas_rua_check['cotas_rua_fim'];
+				$cotas_rua_check = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges, qty_numbers FROM product_list WHERE id = \'' . $product_id . '\''')->fetch_assoc();
+				// Montar lista de ranges: prioriza cotas_rua_ranges (JSON), com fallback para campos legados
+				$_rua_ranges_check = [];
+				if (!empty($cotas_rua_check['cotas_rua_ranges'])) {
+					$_decoded_check = json_decode($cotas_rua_check['cotas_rua_ranges'], true);
+					if (is_array($_decoded_check) && count($_decoded_check) > 0) {
+						$_rua_ranges_check = $_decoded_check;
+					}
+				}
+				if (empty($_rua_ranges_check) && !empty($cotas_rua_check['cotas_rua_inicio']) && !empty($cotas_rua_check['cotas_rua_fim'])) {
+					$_rua_ranges_check = [['inicio' => (int)$cotas_rua_check['cotas_rua_inicio'], 'fim' => (int)$cotas_rua_check['cotas_rua_fim']]];
+				}
+				if (!empty($_rua_ranges_check)) {
 					$numeros_bloqueados = [];
 					foreach ($numbers as $num) {
 						$num_int = (int)$num;
-						if ($num_int >= $rua_inicio && $num_int <= $rua_fim) {
-							$numeros_bloqueados[] = $num;
+						foreach ($_rua_ranges_check as $_rc) {
+							if ($num_int >= (int)$_rc['inicio'] && $num_int <= (int)$_rc['fim']) {
+								$numeros_bloqueados[] = $num;
+								break;
+							}
 						}
 					}
 					if (!empty($numeros_bloqueados)) {
