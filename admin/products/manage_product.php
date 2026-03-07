@@ -1,5 +1,5 @@
 ﻿<?php
-// v3.0 - Cotas de rua: mÃºltiplos ranges, preview stats, validaÃ§Ã£o de interseÃ§Ã£o, modal de sequÃªncia nÃ£o salva, pq?
+// v3.0 - Cotas de rua: múltiplos ranges, preview stats, validação de interseção, modal de sequência não salva, pq?
 
 if (isset($_GET['id']) && 0 < $_GET['id']) {
     $qry = $conn->query('SELECT * from `product_list` where id = \'' . $_GET['id'] . '\' ');
@@ -128,16 +128,16 @@ echo '<style>' .
                                 <input name="subtitle" id="subtitle" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="ex: CAMPANHA 21 HORAS" value="<?= isset($subtitle) ? $subtitle : '' ?>" />
                             </label>
                         </div>
-                        <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">DescriÃ§Ã£o</span>
-                            <p style="font-size:13px;color: orange;font-style:italic;">VocÃª pode utilizar tags html na descriÃ§Ã£o para uma melhor formataÃ§Ã£o</p>
-                        </label><textarea name="description" id="description" class="summernote block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-textarea focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray" rows="6" placeholder="DescriÃ§Ã£o da campanha">
+                        <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Descrição</span>
+                            <p style="font-size:13px;color: orange;font-style:italic;">Você pode utilizar tags html na descrição para uma melhor formatação</p>
+                        </label><textarea name="description" id="description" class="summernote block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-textarea focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray" rows="6" placeholder="Descrição da campanha">
 <?= isset($description) ? $description : '' ?>
 </textarea>
                         <label class="block mt-4 text-sm">
                             <span class="text-gray-700 dark:text-gray-400">Tipo de Campanha</span>
                             <select name="type_of_draw" id="type_of_draw" class="block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-select focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray">
-                                <option value="1" <?= isset($type_of_draw) && $type_of_draw == '1' ? 'selected' : '' ?>>AutomÃ¡tico</option>
-                                <option value="2" <?= isset($type_of_draw) && $type_of_draw == '2' ? 'selected' : '' ?>>NÃºmeros</option>
+                                <option value="1" <?= isset($type_of_draw) && $type_of_draw == '1' ? 'selected' : '' ?>>Automático</option>
+                                <option value="2" <?= isset($type_of_draw) && $type_of_draw == '2' ? 'selected' : '' ?>>Números</option>
                                 <option value="3" <?= isset($type_of_draw) && $type_of_draw == '3' ? 'selected' : '' ?>>Fazendinha</option>
                                 <option value="4" <?= isset($type_of_draw) && $type_of_draw == '4' ? 'selected' : '' ?>>Fazendinha metade</option>
                             </select>
@@ -145,36 +145,36 @@ echo '<style>' .
                         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-6 mt-4 qtd-select">
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                                 <div>
-                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opÃ§Ã£o 1</p>
+                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opção 1</p>
                                     <input name="qty_select_1" id="qty_select_1" type="number" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="10" value="<?= isset($qty_select_1) ? $qty_select_1 : 10 ?>" />
                                 </div>
                             </div>
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                                 <div>
-                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opÃ§Ã£o 2</p>
+                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opção 2</p>
                                     <input name="qty_select_2" id="qty_select_2" type="number" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="20" value="<?= isset($qty_select_2) ? $qty_select_2 : 20 ?>" />
                                 </div>
                             </div>
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                                 <div>
-                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opÃ§Ã£o 3*</p><input name="qty_select_3" id="qty_select_3" type="number" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="50" value="<?= isset($qty_select_3) ? $qty_select_3 : 50 ?>" />
+                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opção 3*</p><input name="qty_select_3" id="qty_select_3" type="number" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="50" value="<?= isset($qty_select_3) ? $qty_select_3 : 50 ?>" />
                                 </div>
                             </div>
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                                 <div>
-                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opÃ§Ã£o 4</p>
+                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opção 4</p>
                                     <input name="qty_select_4" id="qty_select_4" type="number" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="100" value="<?= isset($qty_select_4) ? $qty_select_4 : 100 ?>" />
                                 </div>
                             </div>
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                                 <div>
-                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opÃ§Ã£o 5</p>
+                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opção 5</p>
                                     <input name="qty_select_5" id="qty_select_5" type="number" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="200" value="<?= isset($qty_select_5) ? $qty_select_5 : 200 ?>" />
                                 </div>
                             </div>
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
                                 <div>
-                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opÃ§Ã£o 6</p>
+                                    <p class="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Valor opção 6</p>
                                     <input name="qty_select_6" id="qty_select_6" type="number" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="300" value="<?= isset($qty_select_6) ? $qty_select_6 : 300 ?>" />
                                 </div>
                             </div>
@@ -185,15 +185,15 @@ echo '<style>' .
                                 <input style="width:100%" type="datetime-local" name="date_of_draw" id="date_of_draw" class="block mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" value="<?= isset($date_of_draw) ? $date_of_draw : '' ?>" />
                             </label><label class="block mt-4 text-sm ml-4"><span class="text-gray-700 dark:text-gray-400">Campanha privada?</span>
                                 <div class="can-toggle"><input type="checkbox" name="private_draw" id="private_draw" <?= isset($private_draw) && $private_draw == 1 ? ' checked' : '' ?>><label for="private_draw">
-                                        <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                                        <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                                     </label></div>
                             </label><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Destaque?</span>
                                 <div class="can-toggle"><input type="checkbox" name="featured_draw" id="featured_draw" <?= isset($featured_draw) && $featured_draw == 1 ? 'checked' : '' ?>><label for="featured_draw">
-                                        <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                                        <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                                     </label></div>
                             </label>
                         </div>
-                        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3 mt-4"><label class="block mt-4 text-sm qtd-numeros"><span class="text-gray-700 dark:text-gray-400">Quantidade de nÃºmeros</span><select name="qty_numbers" id="qty_numbers" class="block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-select focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray">
+                        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3 mt-4"><label class="block mt-4 text-sm qtd-numeros"><span class="text-gray-700 dark:text-gray-400">Quantidade de números</span><select name="qty_numbers" id="qty_numbers" class="block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-select focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray">
                                     <ption value="10" <?= isset($qty_numbers) && $qty_numbers == '10' ? 'selected' : '' ?>>10</ption>
                                     <option value="50" <?= isset($qty_numbers) && $qty_numbers == '50' ? 'selected' : '' ?>>50</option>
                                     <option value="100" <?= isset($qty_numbers) && $qty_numbers == '100' ? 'selected' : '' ?>>100</option>
@@ -255,16 +255,16 @@ echo '<style>' .
                         </div>
                         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                             <label class="block mt-4 text-sm qtd-minima">
-                                <span class="text-gray-700 dark:text-gray-400">Quantidade limite de compras por usuÃ¡rio</span>
+                                <span class="text-gray-700 dark:text-gray-400">Quantidade limite de compras por usuário</span>
                                 <input name="limit_orders" id="limit_orders" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="1" value="<?= isset($limit_orders) ? $limit_orders : '0' ?>" />
                             </label>
-                            <label class="block mt-4 text-sm qtd-minima"><span class="text-gray-700 dark:text-gray-400">Quantidade mÃ­nima de nÃºmeros comprados por vez</span><input name="min_purchase" id="min_purchase" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="1" value="<?= isset($min_purchase) ? $min_purchase : '1' ?>" /></label><label class="block mt-4 text-sm qtd-maxima"><span class="text-gray-700 dark:text-gray-400">Quantidade mÃ¡xima de nÃºmeros comprados por vez</span><input name="max_purchase" id="max_purchase" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="100" type="number" max="50000" value="<?= isset($max_purchase) ? $max_purchase : '500' ?>"></label>
+                            <label class="block mt-4 text-sm qtd-minima"><span class="text-gray-700 dark:text-gray-400">Quantidade mínima de números comprados por vez</span><input name="min_purchase" id="min_purchase" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="1" value="<?= isset($min_purchase) ? $min_purchase : '1' ?>" /></label><label class="block mt-4 text-sm qtd-maxima"><span class="text-gray-700 dark:text-gray-400">Quantidade máxima de números comprados por vez</span><input name="max_purchase" id="max_purchase" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="100" type="number" max="50000" value="<?= isset($max_purchase) ? $max_purchase : '500' ?>"></label>
                         </div>
-                        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3"><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Status de exibiÃ§Ã£o</span><select name="status_display" id="status_display" class="block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-select focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray">
-                                    <option value="1" <?= isset($status_display) && $status_display == 1 ? 'selected' : '' ?>>Adquira jÃ¡!</option>
-                                    <option value="2" <?= isset($status_display) && $status_display == 2 ? 'selected' : '' ?>>Corre que estÃ¡ acabando!</option>
+                        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3"><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Status de exibição</span><select name="status_display" id="status_display" class="block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-select focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray">
+                                    <option value="1" <?= isset($status_display) && $status_display == 1 ? 'selected' : '' ?>>Adquira já!</option>
+                                    <option value="2" <?= isset($status_display) && $status_display == 2 ? 'selected' : '' ?>>Corre que está acabando!</option>
                                     <option value="3" <?= isset($status_display) && $status_display == 3 ? 'selected' : '' ?>>Aguarde a campanha!</option>
-                                    <option value="4" <?= isset($status_display) && $status_display == 4 ? 'selected' : '' ?>>ConcluÃ­do</option>
+                                    <option value="4" <?= isset($status_display) && $status_display == 4 ? 'selected' : '' ?>>Concluído</option>
                                     <option value="5" <?= isset($status_display) && $status_display == 5 ? 'selected' : '' ?>>Em breve!</option>
                                     <option value="6" <?= isset($status_display) && $status_display == 6 ? 'selected' : '' ?>>Aguarde o sorteio!</option>
                                 </select>
@@ -342,26 +342,26 @@ echo '<style>' .
                         </div>
                     </div>
                     <div id="tab3" class="tabcontent text-gray-700 dark:text-gray-400 hidden">
-                        <!-- PromoÃ§Ã£o Primeira Compra -->
-                        <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">PromoÃ§Ã£o 1Âª Compra (Rifa GrÃ¡tis)?</span>
+                        <!-- Promoção Primeira Compra -->
+                        <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Promoção 1Âª Compra (Rifa Grátis)?</span>
                         </label>
                         <div class="can-toggle">
                             <input type="checkbox" name="first_purchase_enabled" id="first_purchase_enabled" <?= isset($first_purchase_enabled) && $first_purchase_enabled == 1 ? ' checked' : '' ?>>
                             <label for="first_purchase_enabled">
-                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                             </label>
                         </div>
                         <label class="block mt-4 text-sm">
-                            <span class="text-gray-700 dark:text-gray-400">Qtd. NÃºmeros GrÃ¡tis na 1Âª Compra:</span>
+                            <span class="text-gray-700 dark:text-gray-400">Qtd. Números Grátis na 1Âª Compra:</span>
                             <input type="number" name="first_purchase_free_qty" id="first_purchase_free_qty" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Ex: 5" value="<?= isset($first_purchase_free_qty) ? $first_purchase_free_qty : '0' ?>">
                         </label>
                         <hr class="mt-4 mb-4 border-gray-300 dark:border-gray-600">
-                        <!-- Fim PromoÃ§Ã£o Primeira Compra --><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Utilizar descontos nesse campanha?</span>
+                        <!-- Fim Promoção Primeira Compra --><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Utilizar descontos nesse campanha?</span>
                         </label>
                         <div class="can-toggle">
                             <input type="checkbox" name="enable_discount" id="enable_discount" <?= isset($enable_discount) && $enable_discount == 1 ? ' checked' : '' ?>>
                             <label for="enable_discount">
-                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                             </label>
                         </div>
                         <div class="enable_cumulative_discount">
@@ -435,29 +435,29 @@ echo '<style>' .
                         </label>
                         <div class="can-toggle"><input type="checkbox" name="enable_ranking" id="enable_ranking" <?= isset($enable_ranking) && $enable_ranking == 1 ? 'checked' : '' ?>>
                             <label for="enable_ranking">
-                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                             </label>
                         </div>
                         <div class="ranking_qty"><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Mostrar a quantidade de bilhetes comprados?</span></label>
                             <div class="can-toggle"><input type="checkbox" name="enable_ranking_show" id="enable_ranking_show" <?= isset($enable_ranking_show) && $enable_ranking_show == 1 ? 'checked' : '' ?>>
                                 <label for="enable_ranking_show">
-                                    <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                                    <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                                 </label>
                             </div><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Tipo de Ranking</span>
                                 <select name="ranking_type" id="ranking_type" class="block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-select focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray">
                                     <option value="1" <?= isset($ranking_type) && $ranking_type == '1' ? 'selected' : '' ?>>Total</option>
-                                    <option value="2" <?= isset($ranking_type) && $ranking_type == '2' ? 'selected' : '' ?>>DiÃ¡rio</option>
+                                    <option value="2" <?= isset($ranking_type) && $ranking_type == '2' ? 'selected' : '' ?>>Diário</option>
                                 </select>
                             </label>
                             <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Deseja mostrar quantos compradores?</span><input name="ranking_qty" id="ranking_qty" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="1" value="<?= isset($ranking_qty) ? $ranking_qty : '' ?>" /></label>
-                            <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Mensagem da promoÃ§Ã£o do ranking *</span><input name="ranking_message" id="ranking_message" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Quem comprar mais cotas, 1Âº lugar ganha: R$ " value="<?= isset($ranking_message) ? $ranking_message : 'Quem comprar mais cotas, 1Âº lugar ganha: R$' ?>" /></label>
+                            <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Mensagem da promoção do ranking *</span><input name="ranking_message" id="ranking_message" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Quem comprar mais cotas, 1Âº lugar ganha: R$ " value="<?= isset($ranking_message) ? $ranking_message : 'Quem comprar mais cotas, 1Âº lugar ganha: R$' ?>" /></label>
                         </div>
                     </div>
                     <div id="tab5" class="tabcontent text-gray-700 dark:text-gray-400 hidden"><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Exibir barra de progresso?</span>
                         </label>
                         <div class="can-toggle"><input type="checkbox" name="enable_progress_bar" id="enable_progress_bar" <?= isset($enable_progress_bar) && $enable_progress_bar == 1 ? 'checked' : '' ?>>
                             <label for="enable_progress_bar">
-                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                                <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                             </label>
                         </div>
                     </div>
@@ -488,12 +488,12 @@ echo '<style>' .
                                     <div class="grupo-ganhador">
                                         <div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400">
                                             <label class="block mt-4 text-sm">
-                                                <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - <?= $count ?>Âº prÃªmio</span>
+                                                <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - <?= $count ?>Âº prêmio</span>
                                                 <input type="number" name="draw_name[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador" value="<?= $winner['name'] ?>">
                                             </label>
                                             <label class="block mt-4 text-sm">
-                                                <span class="text-gray-700 dark:text-gray-400">NÃºmero/grupo sorteado - <?= $count ?> Âº prÃªmio</span>
-                                                <input type="text" name="draw_number[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="NÃºmero ou grupo sorteado" value="<?= $winner['number'] ?>"></label>
+                                                <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - <?= $count ?> Âº prêmio</span>
+                                                <input type="text" name="draw_number[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Número ou grupo sorteado" value="<?= $winner['number'] ?>"></label>
                                         </div>
                                         <?php
 
@@ -510,12 +510,12 @@ echo '<style>' .
                                 <div class="grupo-ganhador">
                                     <div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400">
                                         <label class="block mt-4 text-sm">
-                                            <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - 1Âº prÃªmio</span>
+                                            <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - 1Âº prêmio</span>
                                             <input type="number" name="draw_name[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador" value="<?= $winner['name'] ?>">
                                         </label>
                                         <label class="block mt-4 text-sm">
-                                            <span class="text-gray-700 dark:text-gray-400">NÃºmero/grupo sorteado - 1Âº prÃªmio:</span>
-                                            <input type="text" name="draw_number[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="NÃºmero ou grupo sorteado">
+                                            <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - 1Âº prêmio:</span>
+                                            <input type="text" name="draw_number[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Número ou grupo sorteado">
                                         </label>
                                     </div>
                                 </div>
@@ -530,7 +530,7 @@ echo '<style>' .
                         <span class="text-gray-700 dark:text-gray-400">
                             Cotas Premiadas
                             <p style="font-size: 13px; color: orange;">
-                                Digite o nÃºmero da cota e pressione enter para adicionar
+                                Digite o número da cota e pressione enter para adicionar
                             </p>
                         </span>
                         <input type="text" id="tags-input" class="block w-full mt-1 text-sm dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700 form-input focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:focus:shadow-outline-gray" placeholder="Pressione Enter para adicionar uma cota">
@@ -559,7 +559,7 @@ echo '<style>' .
 
                     <label class="block mt-4 text-sm">
                         <span class="text-gray-700 dark:text-gray-400">
-                            PremiaÃ§Ãµes
+                            Premiações
 
                         </span>
 
@@ -583,8 +583,8 @@ echo '<style>' .
                         </div>
                     </label>
                     <label class="block mt-4 text-sm qtd-minima">
-                        <span class="text-gray-700 dark:text-gray-400">DescriÃ§Ã£o</span>
-                        <input name="cotas_premiadas_descricao" id="cotas_premiadas__descricao" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" value="<?php echo isset($cotas_premiadas_descricao) ? $cotas_premiadas_descricao : ''; ?>" placeholder="AlÃ©m do prÃªmio principal, temos cotas premiadas esperando por vocÃª. " />
+                        <span class="text-gray-700 dark:text-gray-400">Descrição</span>
+                        <input name="cotas_premiadas_descricao" id="cotas_premiadas__descricao" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" value="<?php echo isset($cotas_premiadas_descricao) ? $cotas_premiadas_descricao : ''; ?>" placeholder="Além do prêmio principal, temos cotas premiadas esperando por você. " />
                     </label>
 
                     <label class="block mt-4 text-sm">
@@ -596,7 +596,7 @@ echo '<style>' .
 
                             type="checkbox" name="status_auto_cota" id="status_auto_cota" value="<?php echo isset($status_auto_cota) ? $status_auto_cota : '' ?> ">
                         <label for="status_auto_cota">
-                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                         </label>
 
                     </div>
@@ -640,18 +640,18 @@ echo '<style>' .
                             <?php echo isset($quantidade_auto_cota) && $quantidade_auto_cota == 1 ? 'checked' : '' ?>
                             value="<?php echo isset($quantidade_auto_cota) ? $quantidade_auto_cota : '' ?> ">
                         <label for="quantidade_auto_cota">
-                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                         </label>
                     </div>
                     <label class="block mt-4 text-sm">
-                        <span class="text-gray-700 dark:text-gray-400">Maior/Menor Cota DiÃ¡ria?</span>
+                        <span class="text-gray-700 dark:text-gray-400">Maior/Menor Cota Diária?</span>
                     </label>
                     <div style="margin-top:4px" class="can-toggle">
                         <input type="checkbox" name="quantidade_auto_cota_diario" id="quantidade_auto_cota_diario"
                             <?php echo isset($quantidade_auto_cota_diario) && $quantidade_auto_cota_diario == 1 ? 'checked' : '' ?>
                             value="<?php echo isset($quantidade_auto_cota_diario) ? $quantidade_auto_cota_diario : '' ?> ">
                         <label for="quantidade_auto_cota_diario">
-                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                         </label>
                     </div>
                     <label class="block mt-4 text-sm">
@@ -662,7 +662,7 @@ echo '<style>' .
                             <?php echo isset($roleta) && $roleta == 1 ? 'checked' : '' ?>
                             value="<?php echo isset($roleta) ? $roleta : '' ?> ">
                         <label for="roleta">
-                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                         </label>
                     </div>
                     <label class="block mt-4 text-sm">
@@ -673,7 +673,7 @@ echo '<style>' .
                             <?php echo isset($box) && $box == 1 ? 'checked' : '' ?>
                             value="<?php echo isset($box) ? $box : '' ?> ">
                         <label for="box">
-                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="NÃ£o"></div>
+                            <div class="can-toggle__switch" data-checked="Sim" data-unchecked="Não"></div>
                         </label>
                     </div>
                 </div>
@@ -696,8 +696,8 @@ echo '<style>' .
                     ?>
 
                     <label class="block mt-4 text-sm">
-                        <span class="text-gray-700 dark:text-gray-400 font-semibold">SequÃªncias reservadas para a rua (venda presencial)</span>
-                        <p style="font-size:13px;color:orange;font-style:italic;margin-top:4px;">Os nÃºmeros dentro dos intervalos abaixo serÃ£o bloqueados para compra online.</p>
+                        <span class="text-gray-700 dark:text-gray-400 font-semibold">Sequências reservadas para a rua (venda presencial)</span>
+                        <p style="font-size:13px;color:orange;font-style:italic;margin-top:4px;">Os números dentro dos intervalos abaixo serão bloqueados para compra online.</p>
                     </label>
 
                     <!-- Hidden field that stores all ranges as JSON -->
@@ -711,14 +711,14 @@ echo '<style>' .
 
                     <div class="mt-3">
                         <button type="button" id="btn-add-range" class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none">
-                            + Adicionar sequÃªncia
+                            + Adicionar sequência
                         </button>
                     </div>
 
-                    <!-- ConfirmaÃ§Ã£o modal -->
+                    <!-- Confirmação modal -->
                     <div id="modal-rua-confirmacao" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
                         <div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
-                            <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">âš ï¸ AtenÃ§Ã£o</p>
+                            <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">âš ï¸ Atenção</p>
                             <p id="modal-rua-msg" style="font-size:14px;color:#555;margin-bottom:18px;"></p>
                             <div style="display:flex;gap:10px;">
                                 <button id="btn-rua-confirmar" type="button" style="flex:1;padding:10px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Reservar mesmo assim</button>
@@ -779,7 +779,7 @@ echo '<style>' .
                             }
                         }
 
-                        // Verifica interseÃ§Ã£o entre ranges. Retorna o Ã­ndice do range conflitante ou -1.
+                        // Verifica interseção entre ranges. Retorna o índice do range conflitante ou -1.
                         function checkOverlap(idx) {
                             var r = ranges[idx];
                             if (!r || r.inicio <= 0 || r.fim < r.inicio) return -1;
@@ -865,12 +865,12 @@ echo '<style>' .
                             box.style.cssText = 'background:#fff;border-radius:12px;padding:24px;max-width:600px;width:95%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.25);';
                             var title = document.createElement('p');
                             title.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:12px;color:#333;';
-                            title.textContent = 'SequÃªncia ' + (idx+1) + ' â€” de ' + r.inicio + ' atÃ© ' + r.fim;
+                            title.textContent = 'Sequência ' + (idx+1) + ' â€” de ' + r.inicio + ' até ' + r.fim;
                             box.appendChild(title);
 
                             var legend = document.createElement('p');
                             legend.style.cssText = 'font-size:11px;color:#a0aec0;margin-bottom:10px;';
-                            legend.innerHTML = '<span style="display:inline-block;width:12px;height:12px;background:#7e3af2;border-radius:3px;margin-right:4px;"></span>Reservado &nbsp;<span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:3px;margin-right:4px;margin-left:8px;"></span>JÃ¡ comprado';
+                            legend.innerHTML = '<span style="display:inline-block;width:12px;height:12px;background:#7e3af2;border-radius:3px;margin-right:4px;"></span>Reservado &nbsp;<span style="display:inline-block;width:12px;height:12px;background:#ef4444;border-radius:3px;margin-right:4px;margin-left:8px;"></span>Já comprado';
                             box.appendChild(legend);
 
                             var badgesWrap = document.createElement('div');
@@ -908,16 +908,16 @@ echo '<style>' .
                                 var block = document.createElement('div');
                                 block.style.cssText = 'border:1px solid ' + (isSaved ? '#c6f6d5' : '#e2e8f0') + ';border-radius:10px;padding:16px;margin-bottom:8px;background:' + (isSaved ? '#f0fff4' : '#fafafa') + ';';
 
-                                // Row 1: inputs + botÃ£o salvar
+                                // Row 1: inputs + botão salvar
                                 var row1 = document.createElement('div');
                                 row1.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
-                                row1.innerHTML = '<label style="font-size:14px;font-weight:600;color:#4a5568;">SequÃªncia ' + (idx+1) + '</label>' +
+                                row1.innerHTML = '<label style="font-size:14px;font-weight:600;color:#4a5568;">Sequência ' + (idx+1) + '</label>' +
                                     ' <span style="font-size:12px;color:#a0aec0;">de</span> ' +
-                                    '<input type="number" min="0" placeholder="InÃ­cio" value="' + r.inicio + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="inicio">' +
-                                    ' <span style="font-size:12px;color:#a0aec0;">atÃ©</span> ' +
+                                    '<input type="number" min="0" placeholder="Início" value="' + r.inicio + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="inicio">' +
+                                    ' <span style="font-size:12px;color:#a0aec0;">até</span> ' +
                                     '<input type="number" min="0" placeholder="Fim" value="' + r.fim + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="fim">';
 
-                                // BotÃ£o Salvar â€” sempre visÃ­vel em cada linha
+                                // Botão Salvar â€” sempre visível em cada linha
                                 var btnSave = document.createElement('button');
                                 btnSave.type = 'button';
                                 if (isSaved) {
@@ -933,7 +933,7 @@ echo '<style>' .
                                     if (btnSave.disabled) return;
                                     var conflito = checkOverlap(i);
                                     if (conflito >= 0) {
-                                        alert('A SequÃªncia ' + (i+1) + ' se sobrepÃµe com a SequÃªncia ' + (conflito+1) + '. Corrija antes de salvar.');
+                                        alert('A Sequência ' + (i+1) + ' se sobrepõe com a Sequência ' + (conflito+1) + '. Corrija antes de salvar.');
                                         return;
                                     }
                                     var rr = ranges[i];
@@ -943,8 +943,8 @@ echo '<style>' .
                                     }
                                     if (boughtCount > 0) {
                                         document.getElementById('modal-rua-msg').innerHTML =
-                                            'A SequÃªncia ' + (i+1) + ' contÃ©m <strong>' + boughtCount + ' nÃºmero(s)</strong> que jÃ¡ foram comprados online.' +
-                                            '<br><br>Eles continuarÃ£o pertencendo ao comprador. Os demais ficam reservados para a rua.';
+                                            'A Sequência ' + (i+1) + ' contém <strong>' + boughtCount + ' número(s)</strong> que já foram comprados online.' +
+                                            '<br><br>Eles continuarão pertencendo ao comprador. Os demais ficam reservados para a rua.';
                                         document.getElementById('modal-rua-confirmacao').style.display = 'flex';
                                         document.getElementById('btn-rua-confirmar').onclick = function() {
                                             document.getElementById('modal-rua-confirmacao').style.display = 'none';
@@ -974,8 +974,8 @@ echo '<style>' .
                                 if (ranges.length > 1) {
                                     var del = document.createElement('button');
                                     del.type = 'button';
-                                    del.textContent = 'âœ•';
-                                    del.title = 'Remover sequÃªncia';
+                                    del.textContent = '✕';
+                                    del.title = 'Remover sequência';
                                     del.style.cssText = 'background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;';
                                     del.addEventListener('click', (function(i) { return function() {
                                         delete _savedRanges[i];
@@ -994,13 +994,13 @@ echo '<style>' .
                                         ranges[i][this.dataset.field] = parseInt(this.value) || 0;
                                         var rr = ranges[i];
                                         if (rr.fim >= rr.inicio && (rr.fim - rr.inicio + 1) > 20000) {
-                                            alert('Cada sequÃªncia pode ter no mÃ¡ximo 20.000 nÃºmeros!');
+                                            alert('Cada sequência pode ter no máximo 20.000 números!');
                                             ranges[i].fim = ranges[i].inicio + 19999;
                                         }
-                                        // Verificar interseÃ§Ã£o
+                                        // Verificar interseção
                                         var conflito = checkOverlap(i);
                                         if (conflito >= 0) {
-                                            alert('A SequÃªncia ' + (i+1) + ' se sobrepÃµe com a SequÃªncia ' + (conflito+1) + '. Ajuste os valores para que nÃ£o haja interseÃ§Ã£o.');
+                                            alert('A Sequência ' + (i+1) + ' se sobrepõe com a Sequência ' + (conflito+1) + '. Ajuste os valores para que não haja interseção.');
                                         }
                                         delete _savedRanges[i];
                                         delete _rangeStats[i];
@@ -1017,12 +1017,12 @@ echo '<style>' .
                                     var row2 = document.createElement('div');
                                     row2.style.cssText = 'display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;';
 
-                                    // Verificar interseÃ§Ã£o e mostrar aviso visual
+                                    // Verificar interseção e mostrar aviso visual
                                     var conflito = checkOverlap(idx);
                                     if (conflito >= 0) {
                                         var warnEl = document.createElement('span');
                                         warnEl.style.cssText = 'font-size:12px;color:#dc2626;font-weight:600;';
-                                        warnEl.textContent = 'âš ï¸ SobrepÃµe com SequÃªncia ' + (conflito+1);
+                                        warnEl.textContent = 'âš ï¸ Sobrepõe com Sequência ' + (conflito+1);
                                         row2.appendChild(warnEl);
                                     }
 
@@ -1030,22 +1030,22 @@ echo '<style>' .
                                     if (stats) {
                                         var statsEl = document.createElement('span');
                                         statsEl.style.cssText = 'font-size:12px;color:#718096;';
-                                        statsEl.innerHTML = '<b>' + stats.total + '</b> nÃºmeros Â· <b style="color:#ef4444;">' + stats.bought + '</b> comprados Â· <b style="color:#7e3af2;">' + stats.reserved + '</b> reservados';
+                                        statsEl.innerHTML = '<b>' + stats.total + '</b> números Â· <b style="color:#ef4444;">' + stats.bought + '</b> comprados Â· <b style="color:#7e3af2;">' + stats.reserved + '</b> reservados';
                                         row2.appendChild(statsEl);
                                     } else {
                                         var statsEl = document.createElement('span');
                                         statsEl.style.cssText = 'font-size:12px;color:#a0aec0;';
-                                        statsEl.textContent = count.toLocaleString() + ' nÃºmeros';
+                                        statsEl.textContent = count.toLocaleString() + ' números';
                                         row2.appendChild(statsEl);
                                     }
 
-                                    // Salvar SequÃªncia button (if not saved) â€” removido daqui, agora fica na Row 1
+                                    // Salvar Sequência button (if not saved) â€” removido daqui, agora fica na Row 1
 
-                                    // Ver NÃºmeros button (available when stats loaded, even before saving)
+                                    // Ver Números button (available when stats loaded, even before saving)
                                     if (stats) {
                                         var btnVer = document.createElement('button');
                                         btnVer.type = 'button';
-                                        btnVer.textContent = 'ðŸ‘ Ver NÃºmeros';
+                                        btnVer.textContent = 'ðŸ‘ Ver Números';
                                         btnVer.style.cssText = 'padding:6px 14px;background:#4a5568;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;';
                                         btnVer.addEventListener('click', (function(i) { return function() {
                                             openNumbersModal(i);
@@ -1070,7 +1070,7 @@ echo '<style>' .
                             document.getElementById('modal-rua-confirmacao').style.display = 'none';
                         });
 
-                        // Carregar stats iniciais se jÃ¡ tem ranges salvos
+                        // Carregar stats iniciais se já tem ranges salvos
                         console.log('[COTAS v9] INIT', {productId: productId, ranges: ranges, pad: pad});
                         if (productId > 0 && ranges.length > 0 && ranges[0].inicio > 0) {
                             saveRangesAjax(function(resp) {
@@ -1083,7 +1083,7 @@ echo '<style>' .
                             console.log('[COTAS v9] INIT no-AJAX, rendered', ranges.length, 'ranges');
                         }
 
-                        // Expor verificaÃ§Ã£o de ranges nÃ£o salvos para o form submit
+                        // Expor verificação de ranges não salvos para o form submit
                         window.hasUnsavedCotasRuaRanges = function() {
                             for (var i = 0; i < ranges.length; i++) {
                                 var r = ranges[i];
@@ -1099,11 +1099,11 @@ echo '<style>' .
                     </script>
                 </div>
 
-                <!-- Modal: aviso de sequÃªncias nÃ£o salvas -->
+                <!-- Modal: aviso de sequências não salvas -->
                 <div id="modal-unsaved-ranges" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
                     <div style="background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
-                        <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">âš ï¸ SequÃªncia nÃ£o salva</p>
-                        <p style="font-size:14px;color:#555;margin-bottom:18px;">VocÃª tem sequÃªncias de cotas de rua que ainda <strong>nÃ£o foram salvas</strong>. VÃ¡ atÃ© a aba "Cotas de rua" e clique em "ðŸ’¾ Salvar SequÃªncia" antes de salvar o produto.</p>
+                        <p style="font-size:17px;font-weight:700;margin-bottom:10px;color:#333;">âš ï¸ Sequência não salva</p>
+                        <p style="font-size:14px;color:#555;margin-bottom:18px;">Você tem sequências de cotas de rua que ainda <strong>não foram salvas</strong>. Vá até a aba "Cotas de rua" e clique em "ðŸ’¾ Salvar Sequência" antes de salvar o produto.</p>
                         <div style="display:flex;gap:10px;">
                             <button id="btn-unsaved-ok" type="button" style="flex:1;padding:10px;background:#7e3af2;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Entendi</button>
                         </div>
@@ -1132,10 +1132,10 @@ echo '<style>' .
         </header>
         <div class="mt-4 mb-6">
             <p class="mb-2 text-lg font-semibold text-gray-700 dark:text-gray-300">
-                ParabÃ©ns!
+                Parabéns!
             </p>
             <p class="text-sm text-gray-700 dark:text-gray-400">
-                AlteraÃ§Ãµes salvas com sucesso!
+                Alterações salvas com sucesso!
             </p>
         </div>
     </div>
@@ -1298,7 +1298,7 @@ echo '<style>' .
             e.preventDefault();
             if (x < max_fields_) {
                 x++;
-                (wrapper_).append('<div class="grupo-ganhador"><div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400"> <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Telefone ganhador - ' + x + 'Âº prÃªmio:</span><input type="text" name="draw_name[]" class="draw_name block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador"></label> <label class="block mt-4 text-sm"> <span class="text-gray-700 dark:text-gray-400">NÃºmero/grupo sorteado - ' + x + 'Âº prÃªmio:</span> <input type="text" name="draw_number[]"class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="NÃºmero ou grupo sorteado"> </label><label class="remove_field_ block mt-4 text-sm"><span class="bg-red-500 px-5 py-3 font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Remover ganhador</span></label><br></div></div>');
+                (wrapper_).append('<div class="grupo-ganhador"><div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400"> <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Telefone ganhador - ' + x + 'Âº prêmio:</span><input type="text" name="draw_name[]" class="draw_name block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador"></label> <label class="block mt-4 text-sm"> <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - ' + x + 'Âº prêmio:</span> <input type="text" name="draw_number[]"class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Número ou grupo sorteado"> </label><label class="remove_field_ block mt-4 text-sm"><span class="bg-red-500 px-5 py-3 font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Remover ganhador</span></label><br></div></div>');
             }
             if (x == max_fields_) {
                 $('.add_field_').hide();
@@ -1426,7 +1426,7 @@ echo '<style>' .
                 filesInput.files = newFilesList.files;
                 /*
                 if (totalFiles > maxFiles) {
-                alert('VocÃª pode enviar apenas ' + maxFiles + ' imagens.');
+                alert('Você pode enviar apenas ' + maxFiles + ' imagens.');
                 $(this).val('');
                 } */
                 for (var i = 0; i < maxFiles; i++) {
@@ -1459,7 +1459,7 @@ echo '<style>' .
 
         //Fim imagem e galeria
         //Save products
-        // Listener para fechar modal de sequÃªncias nÃ£o salvas
+        // Listener para fechar modal de sequências não salvas
         $('#btn-unsaved-ok').click(function() {
             $('#modal-unsaved-ranges').css('display', 'none');
         });
@@ -1469,7 +1469,7 @@ echo '<style>' .
             var _this = $(this)
             $('.err-msg').remove();
 
-            // Verificar se hÃ¡ sequÃªncias de cotas de rua nÃ£o salvas
+            // Verificar se há sequências de cotas de rua não salvas
             if (typeof window.hasUnsavedCotasRuaRanges === 'function' && window.hasUnsavedCotasRuaRanges()) {
                 $('#modal-unsaved-ranges').css('display', 'flex');
                 return;
@@ -1513,14 +1513,14 @@ echo '<style>' .
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         function removeSpaces() {
-            let val = $('#tipo_auto_cota').val().replace(/\s+/g, ''); // Remove todos os espaÃ§os
+            let val = $('#tipo_auto_cota').val().replace(/\s+/g, ''); // Remove todos os espaços
             $('#tipo_auto_cota').val(val);
         }
 
-        // Remover espaÃ§os quando o valor do input for alterado
+        // Remover espaços quando o valor do input for alterado
         $('#tipo_auto_cota').on('input change', removeSpaces);
 
-        // Remover espaÃ§os no carregamento da pÃ¡gina
+        // Remover espaços no carregamento da página
         removeSpaces();
 
 
@@ -1585,7 +1585,7 @@ echo '<style>' .
                 e.preventDefault();
                 var tagText = $(this).val().trim();
                 var tipoText = 'premiada';
-                var premioText = prompt('Digite o prÃªmio para a cota "' + tagText + '":');
+                var premioText = prompt('Digite o prêmio para a cota "' + tagText + '":');
                 if (premioText === null || premioText === '') {
                     return
                 }
@@ -1609,7 +1609,7 @@ echo '<style>' .
                     $(this).val('');
                     updateHiddenInput();
                 } else if (isDuplicate) {
-                    alert('Tag duplicada nÃ£o pode ser adicionada.');
+                    alert('Tag duplicada não pode ser adicionada.');
                 }
             }
         });
