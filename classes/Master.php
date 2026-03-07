@@ -895,12 +895,24 @@ error_reporting(1);
 $globos = strlen($qty_numbers);
 $numeris = [];
 
-// Carregar range de cotas de rua para excluir da geração automática
-$cotas_rua_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+// Carregar ranges de cotas de rua para excluir da geração automática (suporta múltiplos ranges)
+$cotas_rua_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+$_rua_ranges_auto = [];
+if (!empty($cotas_rua_data['cotas_rua_ranges'])) {
+    $_decoded_auto = json_decode($cotas_rua_data['cotas_rua_ranges'], true);
+    if (is_array($_decoded_auto) && count($_decoded_auto) > 0) {
+        $_rua_ranges_auto = $_decoded_auto;
+    }
+}
+if (empty($_rua_ranges_auto) && !empty($cotas_rua_data['cotas_rua_inicio']) && !empty($cotas_rua_data['cotas_rua_fim'])) {
+    $_rua_ranges_auto = [['inicio' => (int)$cotas_rua_data['cotas_rua_inicio'], 'fim' => (int)$cotas_rua_data['cotas_rua_fim']]];
+}
 $numeros_rua = [];
-if (!empty($cotas_rua_data['cotas_rua_inicio']) && !empty($cotas_rua_data['cotas_rua_fim'])) {
-    for ($r = (int)$cotas_rua_data['cotas_rua_inicio']; $r <= (int)$cotas_rua_data['cotas_rua_fim']; $r++) {
-        $numeros_rua[] = str_pad($r, max((int) $globos, strlen($qty_numbers)), "0", STR_PAD_LEFT);
+if (!empty($_rua_ranges_auto)) {
+    foreach ($_rua_ranges_auto as $_ra) {
+        for ($r = (int)$_ra['inicio']; $r <= (int)$_ra['fim']; $r++) {
+            $numeros_rua[] = str_pad($r, max((int) $globos, strlen($qty_numbers)), "0", STR_PAD_LEFT);
+        }
     }
 }
 
