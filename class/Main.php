@@ -1829,6 +1829,15 @@ class Main extends DBConnection
                     }
 
                     $numeris = [];
+                    // [DEBUG COTAS RUA] — remover após confirmar funcionamento
+                    error_log('[COTAS_RUA_DEBUG] product=' . $product_id
+                        . ' qty_numbers(decr)=' . $qty_numbers
+                        . ' globos=' . $globos
+                        . ' total_gen=' . $total_numbers_generated
+                        . ' ranges=' . json_encode($_rua_ranges_auto)
+                        . ' sold_set_count=' . count($sold_numbers_set)
+                        . ' sample_blocked=' . (isset($sold_numbers_set[str_pad(1, $globos, '0', STR_PAD_LEFT)]) ? 'SIM' : 'NAO')
+                    );
                     while (count($numeris) < $total_numbers_generated) {
                         $random_number = mt_rand(0, $qty_numbers);
                         $padded_number = str_pad($random_number, $globos, "0", STR_PAD_LEFT);
