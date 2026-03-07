@@ -3655,8 +3655,8 @@ class Main extends DBConnection
 
             $all_lucky_numbers = [];
             $orders = $this->conn->query("SELECT o.*
-	FROM `order_list` o 	
-	WHERE o.product_id = '{$id}'");
+    FROM `order_list` o     
+    WHERE o.product_id = '{$id}'");
 
             while ($row1 = $orders->fetch_assoc()) {
                 $all_lucky_numbers[] = $row1["order_numbers"];
@@ -3776,9 +3776,9 @@ class Main extends DBConnection
 
             //$qty_numbers = $qty_numbers - 1;
             $total_numbers_generated = 25;
-            /*	if($pending_numbers || $paid_numbers){
+            /*  if($pending_numbers || $paid_numbers){
     $total_numbers_generated = $qty_numbers - ($pending_numbers + $paid_numbers);
-	} */
+    } */
 
             $all_lucky_numbers = [];
             $orders = $this->conn->query("
