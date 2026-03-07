@@ -343,7 +343,7 @@ echo '<style>' .
                     </div>
                     <div id="tab3" class="tabcontent text-gray-700 dark:text-gray-400 hidden">
                         <!-- Promoção Primeira Compra -->
-                        <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Promoção 1Âª Compra (Rifa Grátis)?</span>
+                        <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Promoção 1ª Compra (Rifa Grátis)?</span>
                         </label>
                         <div class="can-toggle">
                             <input type="checkbox" name="first_purchase_enabled" id="first_purchase_enabled" <?= isset($first_purchase_enabled) && $first_purchase_enabled == 1 ? ' checked' : '' ?>>
@@ -352,7 +352,7 @@ echo '<style>' .
                             </label>
                         </div>
                         <label class="block mt-4 text-sm">
-                            <span class="text-gray-700 dark:text-gray-400">Qtd. Números Grátis na 1Âª Compra:</span>
+                            <span class="text-gray-700 dark:text-gray-400">Qtd. Números Grátis na 1ª Compra:</span>
                             <input type="number" name="first_purchase_free_qty" id="first_purchase_free_qty" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Ex: 5" value="<?= isset($first_purchase_free_qty) ? $first_purchase_free_qty : '0' ?>">
                         </label>
                         <hr class="mt-4 mb-4 border-gray-300 dark:border-gray-600">
@@ -450,7 +450,7 @@ echo '<style>' .
                                 </select>
                             </label>
                             <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Deseja mostrar quantos compradores?</span><input name="ranking_qty" id="ranking_qty" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="1" value="<?= isset($ranking_qty) ? $ranking_qty : '' ?>" /></label>
-                            <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Mensagem da promoção do ranking *</span><input name="ranking_message" id="ranking_message" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Quem comprar mais cotas, 1Âº lugar ganha: R$ " value="<?= isset($ranking_message) ? $ranking_message : 'Quem comprar mais cotas, 1Âº lugar ganha: R$' ?>" /></label>
+                            <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Mensagem da promoção do ranking *</span><input name="ranking_message" id="ranking_message" class="block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Quem comprar mais cotas, 1º lugar ganha: R$ " value="<?= isset($ranking_message) ? $ranking_message : 'Quem comprar mais cotas, 1º lugar ganha: R$' ?>" /></label>
                         </div>
                     </div>
                     <div id="tab5" class="tabcontent text-gray-700 dark:text-gray-400 hidden"><label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Exibir barra de progresso?</span>
@@ -488,11 +488,11 @@ echo '<style>' .
                                     <div class="grupo-ganhador">
                                         <div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400">
                                             <label class="block mt-4 text-sm">
-                                                <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - <?= $count ?>Âº prêmio</span>
+                                                <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - <?= $count ?>º prêmio</span>
                                                 <input type="number" name="draw_name[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador" value="<?= $winner['name'] ?>">
                                             </label>
                                             <label class="block mt-4 text-sm">
-                                                <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - <?= $count ?> Âº prêmio</span>
+                                                <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - <?= $count ?> º prêmio</span>
                                                 <input type="text" name="draw_number[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Número ou grupo sorteado" value="<?= $winner['number'] ?>"></label>
                                         </div>
                                         <?php
@@ -510,11 +510,11 @@ echo '<style>' .
                                 <div class="grupo-ganhador">
                                     <div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400">
                                         <label class="block mt-4 text-sm">
-                                            <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - 1Âº prêmio</span>
+                                            <span class="text-gray-700 dark:text-gray-400"> Telefone ganhador - 1º prêmio</span>
                                             <input type="number" name="draw_name[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador" value="<?= $winner['name'] ?>">
                                         </label>
                                         <label class="block mt-4 text-sm">
-                                            <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - 1Âº prêmio:</span>
+                                            <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - 1º prêmio:</span>
                                             <input type="text" name="draw_number[]" class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Número ou grupo sorteado">
                                         </label>
                                     </div>
@@ -1298,7 +1298,7 @@ echo '<style>' .
             e.preventDefault();
             if (x < max_fields_) {
                 x++;
-                (wrapper_).append('<div class="grupo-ganhador"><div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400"> <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Telefone ganhador - ' + x + 'Âº prêmio:</span><input type="text" name="draw_name[]" class="draw_name block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador"></label> <label class="block mt-4 text-sm"> <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - ' + x + 'Âº prêmio:</span> <input type="text" name="draw_number[]"class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Número ou grupo sorteado"> </label><label class="remove_field_ block mt-4 text-sm"><span class="bg-red-500 px-5 py-3 font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Remover ganhador</span></label><br></div></div>');
+                (wrapper_).append('<div class="grupo-ganhador"><div class="ganhador dark:border-gray-600 text-gray-700 dark:text-gray-400"> <label class="block mt-4 text-sm"><span class="text-gray-700 dark:text-gray-400">Telefone ganhador - ' + x + 'º prêmio:</span><input type="text" name="draw_name[]" class="draw_name block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Telefone do ganhador"></label> <label class="block mt-4 text-sm"> <span class="text-gray-700 dark:text-gray-400">Número/grupo sorteado - ' + x + 'º prêmio:</span> <input type="text" name="draw_number[]"class="draw_number block w-full mt-1 text-sm dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300 dark:focus:shadow-outline-gray form-input" placeholder="Número ou grupo sorteado"> </label><label class="remove_field_ block mt-4 text-sm"><span class="bg-red-500 px-5 py-3 font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">Remover ganhador</span></label><br></div></div>');
             }
             if (x == max_fields_) {
                 $('.add_field_').hide();
