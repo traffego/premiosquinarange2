@@ -902,12 +902,13 @@ echo '<style>' .
                             ranges.forEach(function(r, idx) {
                                 var count = (r.fim >= r.inicio && r.inicio > 0) ? (r.fim - r.inicio + 1) : 0;
                                 var isSaved = !!_savedRanges[idx];
+                                var isValid = r.inicio > 0 && r.fim >= r.inicio;
                                 var stats = _rangeStats[idx];
 
                                 var block = document.createElement('div');
-                                block.style.cssText = 'border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:8px;background:#fafafa;';
+                                block.style.cssText = 'border:1px solid ' + (isSaved ? '#c6f6d5' : '#e2e8f0') + ';border-radius:10px;padding:16px;margin-bottom:8px;background:' + (isSaved ? '#f0fff4' : '#fafafa') + ';';
 
-                                // Row 1: inputs
+                                // Row 1: inputs + botão salvar
                                 var row1 = document.createElement('div');
                                 row1.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
                                 row1.innerHTML = '<label style="font-size:14px;font-weight:600;color:#4a5568;">Sequência ' + (idx+1) + '</label>' +
@@ -915,6 +916,60 @@ echo '<style>' .
                                     '<input type="number" min="0" placeholder="Início" value="' + r.inicio + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="inicio">' +
                                     ' <span style="font-size:12px;color:#a0aec0;">até</span> ' +
                                     '<input type="number" min="0" placeholder="Fim" value="' + r.fim + '" style="width:110px;border:1px solid #cbd5e0;border-radius:6px;padding:6px 10px;font-size:13px;" data-idx="' + idx + '" data-field="fim">';
+
+                                // Botão Salvar — sempre visível em cada linha
+                                var btnSave = document.createElement('button');
+                                btnSave.type = 'button';
+                                if (isSaved) {
+                                    btnSave.textContent = '✓ Salvo';
+                                    btnSave.style.cssText = 'padding:6px 14px;background:#38a169;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:default;opacity:0.85;';
+                                    btnSave.disabled = true;
+                                } else {
+                                    btnSave.textContent = '💾 Salvar';
+                                    btnSave.style.cssText = 'padding:6px 14px;background:' + (isValid ? '#7e3af2' : '#a0aec0') + ';color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:' + (isValid ? 'pointer' : 'not-allowed') + ';';
+                                    btnSave.disabled = !isValid;
+                                }
+                                btnSave.addEventListener('click', (function(i) { return function() {
+                                    if (btnSave.disabled) return;
+                                    var conflito = checkOverlap(i);
+                                    if (conflito >= 0) {
+                                        alert('A Sequência ' + (i+1) + ' se sobrepõe com a Sequência ' + (conflito+1) + '. Corrija antes de salvar.');
+                                        return;
+                                    }
+                                    var rr = ranges[i];
+                                    var boughtCount = 0;
+                                    for (var n = rr.inicio; n <= rr.fim; n++) {
+                                        if (boughtNumbers.hasOwnProperty(padNum(n))) boughtCount++;
+                                    }
+                                    if (boughtCount > 0) {
+                                        document.getElementById('modal-rua-msg').innerHTML =
+                                            'A Sequência ' + (i+1) + ' contém <strong>' + boughtCount + ' número(s)</strong> que já foram comprados online.' +
+                                            '<br><br>Eles continuarão pertencendo ao comprador. Os demais ficam reservados para a rua.';
+                                        document.getElementById('modal-rua-confirmacao').style.display = 'flex';
+                                        document.getElementById('btn-rua-confirmar').onclick = function() {
+                                            document.getElementById('modal-rua-confirmacao').style.display = 'none';
+                                            doSave();
+                                        };
+                                    } else {
+                                        doSave();
+                                    }
+                                    function doSave() {
+                                        btnSave.disabled = true;
+                                        btnSave.textContent = 'Salvando...';
+                                        btnSave.style.background = '#a0aec0';
+                                        saveRangesAjax(function(resp) {
+                                            if (resp.status === 'success') {
+                                                renderRanges();
+                                            } else {
+                                                alert(resp.error || 'Erro ao salvar.');
+                                                btnSave.disabled = false;
+                                                btnSave.textContent = '💾 Salvar';
+                                                btnSave.style.background = '#7e3af2';
+                                            }
+                                        });
+                                    }
+                                }; })(idx));
+                                row1.appendChild(btnSave);
 
                                 if (ranges.length > 1) {
                                     var del = document.createElement('button');
@@ -984,53 +1039,7 @@ echo '<style>' .
                                         row2.appendChild(statsEl);
                                     }
 
-                                    // Salvar Sequência button (if not saved)
-                                    if (!isSaved) {
-                                        var btnSave = document.createElement('button');
-                                        btnSave.type = 'button';
-                                        btnSave.textContent = '💾 Salvar Sequência';
-                                        btnSave.style.cssText = 'padding:6px 14px;background:#7e3af2;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:600;';
-                                        btnSave.addEventListener('click', (function(i) { return function() {
-                                            // Bloquear se houver interseção
-                                            var conflito = checkOverlap(i);
-                                            if (conflito >= 0) {
-                                                alert('A Sequência ' + (i+1) + ' se sobrepõe com a Sequência ' + (conflito+1) + '. Corrija antes de salvar.');
-                                                return;
-                                            }
-                                            // Check for bought numbers in this range
-                                            var r = ranges[i];
-                                            var boughtCount = 0;
-                                            for (var n = r.inicio; n <= r.fim; n++) {
-                                                if (boughtNumbers.hasOwnProperty(padNum(n))) boughtCount++;
-                                            }
-                                            if (boughtCount > 0) {
-                                                document.getElementById('modal-rua-msg').innerHTML =
-                                                    'A Sequência ' + (i+1) + ' contém <strong>' + boughtCount + ' número(s)</strong> que já foram comprados online.' +
-                                                    '<br><br>Eles continuarão pertencendo ao comprador. Os demais ficam reservados para a rua.';
-                                                document.getElementById('modal-rua-confirmacao').style.display = 'flex';
-                                                document.getElementById('btn-rua-confirmar').onclick = function() {
-                                                    document.getElementById('modal-rua-confirmacao').style.display = 'none';
-                                                    doSave();
-                                                };
-                                            } else {
-                                                doSave();
-                                            }
-                                            function doSave() {
-                                                btnSave.disabled = true;
-                                                btnSave.textContent = 'Salvando...';
-                                                saveRangesAjax(function(resp) {
-                                                    if (resp.status === 'success') {
-                                                        renderRanges();
-                                                    } else {
-                                                        alert(resp.error || 'Erro ao salvar.');
-                                                        btnSave.disabled = false;
-                                                        btnSave.textContent = '💾 Salvar Sequência';
-                                                    }
-                                                });
-                                            }
-                                        }; })(idx));
-                                        row2.appendChild(btnSave);
-                                    }
+                                    // Salvar Sequência button (if not saved) — removido daqui, agora fica na Row 1
 
                                     // Ver Números button (available when stats loaded, even before saving)
                                     if (stats) {
