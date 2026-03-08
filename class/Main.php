@@ -1841,6 +1841,19 @@ class Main extends DBConnection
                         . ' num001_key=' . str_pad(1, $globos, '0', STR_PAD_LEFT)
                         . "\n";
                     file_put_contents($_SERVER['DOCUMENT_ROOT'] . '/debug_cotas_rua.log', $dbg, FILE_APPEND | LOCK_EX);
+                    // Verificar se há números livres suficientes antes de sortear
+                    $total_slots = $qty_numbers + 1; // 0..qty_numbers inclusive
+                    $available = $total_slots - count($sold_numbers_set);
+                    if ($available < $total_numbers_generated) {
+                        $resp['status'] = 'failed';
+                        $resp['error'] = 'As cotas acabaram.';
+                        $this->conn->query("DELETE FROM `order_list` WHERE code = '$code'");
+                        $this->conn->query("UPDATE `product_list` SET `pending_numbers` = `pending_numbers` - '$total_numbers_generated' WHERE `id` = '$product_id'");
+                        flock($lock, LOCK_UN);
+                        fclose($lock);
+                        return json_encode($resp);
+                    }
+
                     while (count($numeris) < $total_numbers_generated) {
                         $random_number = mt_rand(0, $qty_numbers);
                         $padded_number = str_pad($random_number, $globos, "0", STR_PAD_LEFT);
