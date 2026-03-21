@@ -1,6 +1,193 @@
 <?php
 require_once(__DIR__ . '/config.php');
-$logged = aff_logged_in();
+
+// ─── PROCESSAR AÇÕES (POST) ─────────────────────────────────────
+$msg = '';
+$msg_type = '';
+$action = isset($_POST['action']) ? $_POST['action'] : (isset($_GET['action']) ? $_GET['action'] : '');
+
+// LOGOUT
+if ($action === 'logout') {
+    aff_logout();
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// LOGIN
+if ($action === 'login') {
+    $phone = preg_replace('/[^0-9]/', '', $_POST['phone']);
+
+    if (strlen($phone) < 10) {
+        $msg = 'Telefone inválido.';
+        $msg_type = 'error';
+    } else {
+        $stmt = $conn->prepare("SELECT * FROM customer_list WHERE phone = ? LIMIT 1");
+        $stmt->bind_param('s', $phone);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            $msg = 'Telefone não encontrado. Faça seu cadastro.';
+            $msg_type = 'error';
+        } else {
+            $user = $result->fetch_assoc();
+            $stmt->close();
+
+            // Se não é afiliado, torna automaticamente
+            if ($user['is_affiliate'] != 1) {
+                $code = generate_referral_code($conn);
+                $pct  = get_default_percentage($conn);
+                $ins  = $conn->prepare("INSERT INTO referral (customer_id, referral_code, percentage, amount_pending, amount_paid, status) VALUES (?, ?, ?, 0, 0, 1)");
+                $ins->bind_param('isi', $user['id'], $code, $pct);
+                $ins->execute();
+                $ins->close();
+                $conn->query("UPDATE customer_list SET is_affiliate = 1 WHERE id = " . intval($user['id']));
+            }
+
+            aff_login($user);
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
+        }
+    }
+}
+
+// CADASTRO
+if ($action === 'register') {
+    $firstname = trim($_POST['firstname']);
+    $lastname  = trim($_POST['lastname']);
+    $phone     = preg_replace('/[^0-9]/', '', $_POST['phone']);
+
+    if (!$firstname || !$lastname || !$phone) {
+        $msg = 'Preencha todos os campos.';
+        $msg_type = 'error';
+    } elseif (strlen($phone) < 10) {
+        $msg = 'Telefone inválido.';
+        $msg_type = 'error';
+    } else {
+        // Verifica se telefone já existe
+        $chk = $conn->prepare("SELECT id, is_affiliate FROM customer_list WHERE phone = ? LIMIT 1");
+        $chk->bind_param('s', $phone);
+        $chk->execute();
+        $res = $chk->get_result();
+
+        if ($res->num_rows > 0) {
+            $existing = $res->fetch_assoc();
+            $chk->close();
+
+            if ($existing['is_affiliate'] != 1) {
+                $code = generate_referral_code($conn);
+                $pct  = get_default_percentage($conn);
+                $ins  = $conn->prepare("INSERT INTO referral (customer_id, referral_code, percentage, amount_pending, amount_paid, status) VALUES (?, ?, ?, 0, 0, 1)");
+                $ins->bind_param('isi', $existing['id'], $code, $pct);
+                $ins->execute();
+                $ins->close();
+                $conn->query("UPDATE customer_list SET is_affiliate = 1 WHERE id = " . intval($existing['id']));
+            }
+
+            $user = $conn->query("SELECT * FROM customer_list WHERE id = " . intval($existing['id']))->fetch_assoc();
+            aff_login($user);
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
+        }
+        $chk->close();
+
+        // Cria conta nova
+        $date_added = date('Y-m-d H:i:s');
+        $ins = $conn->prepare("INSERT INTO customer_list (firstname, lastname, phone, is_affiliate, date_added) VALUES (?, ?, ?, 1, ?)");
+        $ins->bind_param('ssss', $firstname, $lastname, $phone, $date_added);
+
+        if (!$ins->execute()) {
+            $msg = 'Erro ao criar conta. Tente novamente.';
+            $msg_type = 'error';
+        } else {
+            $new_id = $conn->insert_id;
+            $ins->close();
+
+            $code = generate_referral_code($conn);
+            $pct  = get_default_percentage($conn);
+            $ref  = $conn->prepare("INSERT INTO referral (customer_id, referral_code, percentage, amount_pending, amount_paid, status) VALUES (?, ?, ?, 0, 0, 1)");
+            $ref->bind_param('isi', $new_id, $code, $pct);
+            $ref->execute();
+            $ref->close();
+
+            $user = $conn->query("SELECT * FROM customer_list WHERE id = " . intval($new_id))->fetch_assoc();
+            aff_login($user);
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
+        }
+    }
+}
+
+// ─── DADOS DO DASHBOARD (se logado) ──────────────────────────────
+$referral_code = '';
+$aff_link = '';
+$amount_pending = 0;
+$amount_paid = 0;
+$percentage = 10;
+$total_vendas = 0;
+$vendas = [];
+
+if (aff_logged_in()) {
+    $uid = intval(aff_user('id'));
+
+    $ref = $conn->query("SELECT * FROM referral WHERE customer_id = $uid AND status = 1 LIMIT 1");
+    if ($ref && $ref->num_rows > 0) {
+        $r = $ref->fetch_assoc();
+        $referral_code  = $r['referral_code'];
+        $amount_pending = $r['amount_pending'];
+        $amount_paid    = $r['amount_paid'];
+        $percentage     = $r['percentage'];
+        $aff_link       = BASE_REF . '?&ref=' . $referral_code;
+
+        // Vendas
+        $sales = $conn->query("SELECT COUNT(id) as total FROM order_list WHERE referral_id = '" . $conn->real_escape_string($referral_code) . "'");
+        if ($sales && $sales->num_rows > 0) {
+            $total_vendas = intval($sales->fetch_assoc()['total']);
+        }
+
+        // Lista de vendas
+        $list = $conn->query("
+            SELECT o.id, o.order_total, o.status, o.date_added,
+                   c.firstname, c.lastname,
+                   p.name as product_name
+            FROM order_list o
+            LEFT JOIN customer_list c ON c.id = o.customer_id
+            LEFT JOIN product_list p ON p.id = o.product_id
+            WHERE o.referral_id = '" . $conn->real_escape_string($referral_code) . "'
+            ORDER BY o.date_added DESC
+            LIMIT 50
+        ");
+        if ($list) {
+            while ($row = $list->fetch_assoc()) {
+                $vendas[] = $row;
+            }
+        }
+    }
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────
+function generate_referral_code($conn) {
+    do {
+        $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+        $check = $conn->query("SELECT id FROM referral WHERE referral_code = '" . $conn->real_escape_string($code) . "' LIMIT 1");
+    } while ($check && $check->num_rows > 0);
+    return $code;
+}
+
+function get_default_percentage($conn) {
+    $q = $conn->query("SELECT meta_value FROM system_info WHERE meta_field = 'default_affiliate_percentage' LIMIT 1");
+    if ($q && $q->num_rows > 0) {
+        $val = intval($q->fetch_assoc()['meta_value']);
+        return $val > 0 ? $val : 10;
+    }
+    return 10;
+}
+
+function status_badge($status) {
+    if ($status == 2) return '<span class="aff-badge pago">Pago</span>';
+    if ($status == 3) return '<span class="aff-badge cancelado">Cancelado</span>';
+    return '<span class="aff-badge pendente">Pendente</span>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -21,121 +208,134 @@ $logged = aff_logged_in();
         <p>Ganhe comissões indicando para seus amigos</p>
     </div>
 
-    <!-- ═══ AUTH (Login / Cadastro) ═══ -->
-    <div id="auth-section" style="<?= $logged ? 'display:none' : '' ?>">
+    <?php if (!aff_logged_in()): ?>
+    <!-- ═══════════════════════════════════════════════════════════
+         AUTH: LOGIN / CADASTRO
+         ═══════════════════════════════════════════════════════════ -->
 
-        <div class="aff-tabs">
-            <button class="aff-tab active" onclick="switchTab('login')">Entrar</button>
-            <button class="aff-tab" onclick="switchTab('register')">Cadastrar</button>
+    <?php if ($msg): ?>
+        <div class="aff-msg <?= $msg_type ?>"><?= htmlspecialchars($msg) ?></div>
+    <?php endif; ?>
+
+    <div class="aff-tabs">
+        <button class="aff-tab <?= ($action !== 'register') ? 'active' : '' ?>" onclick="showTab('login')">Entrar</button>
+        <button class="aff-tab <?= ($action === 'register') ? 'active' : '' ?>" onclick="showTab('register')">Cadastrar</button>
+    </div>
+
+    <!-- Login -->
+    <form id="form-login" class="aff-form <?= ($action !== 'register') ? 'active' : '' ?>"
+          method="POST" action="">
+        <input type="hidden" name="action" value="login">
+        <div class="aff-field">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(00) 00000-0000"
+                   maxlength="15" oninput="maskPhone(this)" required>
         </div>
+        <button type="submit" class="aff-btn">Entrar</button>
+    </form>
 
-        <div id="auth-msg" class="aff-msg"></div>
+    <!-- Cadastro -->
+    <form id="form-register" class="aff-form <?= ($action === 'register') ? 'active' : '' ?>"
+          method="POST" action="">
+        <input type="hidden" name="action" value="register">
+        <div class="aff-field">
+            <label>Nome</label>
+            <input type="text" name="firstname" placeholder="Seu nome"
+                   value="<?= htmlspecialchars($_POST['firstname'] ?? '') ?>" required>
+        </div>
+        <div class="aff-field">
+            <label>Sobrenome</label>
+            <input type="text" name="lastname" placeholder="Seu sobrenome"
+                   value="<?= htmlspecialchars($_POST['lastname'] ?? '') ?>" required>
+        </div>
+        <div class="aff-field">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(00) 00000-0000"
+                   maxlength="15" oninput="maskPhone(this)" required>
+        </div>
+        <button type="submit" class="aff-btn">🚀 Criar conta e ser Afiliado</button>
+    </form>
 
-        <!-- Login -->
-        <form id="form-login" class="aff-form active" onsubmit="return doLogin(event)">
-            <div class="aff-field">
-                <label>Telefone</label>
-                <input type="tel" id="login-phone" placeholder="(00) 00000-0000"
-                       maxlength="15" oninput="maskPhone(this)" required>
-            </div>
-            <button type="submit" class="aff-btn" id="btn-login">Entrar</button>
-        </form>
+    <?php else: ?>
+    <!-- ═══════════════════════════════════════════════════════════
+         DASHBOARD
+         ═══════════════════════════════════════════════════════════ -->
 
-        <!-- Cadastro -->
-        <form id="form-register" class="aff-form" onsubmit="return doRegister(event)">
-            <div class="aff-field">
-                <label>Nome</label>
-                <input type="text" id="reg-firstname" placeholder="Seu nome" required>
-            </div>
-            <div class="aff-field">
-                <label>Sobrenome</label>
-                <input type="text" id="reg-lastname" placeholder="Seu sobrenome" required>
-            </div>
-            <div class="aff-field">
-                <label>Telefone</label>
-                <input type="tel" id="reg-phone" placeholder="(00) 00000-0000"
-                       maxlength="15" oninput="maskPhone(this)" required>
-            </div>
-            <button type="submit" class="aff-btn" id="btn-register">🚀 Criar conta e ser Afiliado</button>
+    <!-- Welcome -->
+    <div class="aff-welcome">
+        <h2>Olá, <span><?= htmlspecialchars(aff_user('firstname')) ?></span></h2>
+        <form method="POST" action="" style="margin:0">
+            <input type="hidden" name="action" value="logout">
+            <button type="submit" class="aff-logout">Sair</button>
         </form>
     </div>
 
-    <!-- ═══ DASHBOARD ═══ -->
-    <div id="dashboard-section" class="aff-dashboard <?= $logged ? 'active' : '' ?>">
-        <div class="aff-loading" id="dash-loading">
-            <div class="aff-spinner"></div>
+    <!-- Stats -->
+    <div class="aff-stats">
+        <div class="aff-stat">
+            <div class="aff-stat-label">💰 Saldo Pendente</div>
+            <div class="aff-stat-value green">R$<?= number_format($amount_pending, 2, ',', '.') ?></div>
         </div>
-
-        <div id="dash-content" style="display:none">
-            <!-- Welcome -->
-            <div class="aff-welcome">
-                <h2>Olá, <span id="dash-nome"></span></h2>
-                <button class="aff-logout" onclick="doLogout()">Sair</button>
-            </div>
-
-            <!-- Stats -->
-            <div class="aff-stats">
-                <div class="aff-stat">
-                    <div class="aff-stat-label">💰 Saldo Pendente</div>
-                    <div class="aff-stat-value green" id="dash-pending">R$0,00</div>
-                </div>
-                <div class="aff-stat">
-                    <div class="aff-stat-label">✅ Total Retirado</div>
-                    <div class="aff-stat-value accent" id="dash-paid">R$0,00</div>
-                </div>
-                <div class="aff-stat">
-                    <div class="aff-stat-label">📊 Total Vendas</div>
-                    <div class="aff-stat-value" id="dash-vendas">0</div>
-                </div>
-                <div class="aff-stat">
-                    <div class="aff-stat-label">📈 Comissão</div>
-                    <div class="aff-stat-value yellow" id="dash-pct">10%</div>
-                </div>
-            </div>
-
-            <!-- Link -->
-            <div class="aff-link-card">
-                <h3>🔗 Seu link de indicação</h3>
-                <div class="aff-link-row">
-                    <input type="text" id="dash-link" readonly>
-                    <button class="aff-copy-btn" onclick="copyLink()">📋 Copiar</button>
-                </div>
-            </div>
-
-            <!-- Vendas -->
-            <div class="aff-section-title">📋 Últimas Vendas</div>
-            <div class="aff-vendas-list" id="dash-vendas-list"></div>
+        <div class="aff-stat">
+            <div class="aff-stat-label">✅ Total Retirado</div>
+            <div class="aff-stat-value accent">R$<?= number_format($amount_paid, 2, ',', '.') ?></div>
+        </div>
+        <div class="aff-stat">
+            <div class="aff-stat-label">📊 Total Vendas</div>
+            <div class="aff-stat-value"><?= $total_vendas ?></div>
+        </div>
+        <div class="aff-stat">
+            <div class="aff-stat-label">📈 Comissão</div>
+            <div class="aff-stat-value yellow"><?= $percentage ?>%</div>
         </div>
     </div>
+
+    <!-- Link -->
+    <div class="aff-link-card">
+        <h3>🔗 Seu link de indicação</h3>
+        <div class="aff-link-row">
+            <input type="text" id="aff-link" readonly value="<?= htmlspecialchars($aff_link) ?>">
+            <button class="aff-copy-btn" onclick="copyLink()">📋 Copiar</button>
+        </div>
+    </div>
+
+    <!-- Vendas -->
+    <div class="aff-section-title">📋 Últimas Vendas</div>
+    <div class="aff-vendas-list">
+        <?php if (empty($vendas)): ?>
+            <div class="aff-empty">
+                <span>📭</span>
+                Nenhuma venda registrada ainda.<br>Compartilhe seu link!
+            </div>
+        <?php else: ?>
+            <?php foreach ($vendas as $v): ?>
+                <div class="aff-venda-item">
+                    <div class="aff-venda-info">
+                        <h4><?= htmlspecialchars($v['product_name'] ?: 'Pedido #' . $v['id']) ?></h4>
+                        <p><?= htmlspecialchars($v['firstname'] . ' ' . $v['lastname']) ?> · <?= date('d/m/Y H:i', strtotime($v['date_added'])) ?></p>
+                    </div>
+                    <div class="aff-venda-right">
+                        <div class="aff-venda-valor">R$<?= number_format($v['order_total'], 2, ',', '.') ?></div>
+                        <?= status_badge($v['status']) ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+
+    <?php endif; ?>
 
 </div>
 
 <script>
-var API = 'api.php';
-
-// ─── Tabs ────────────────────────────────────────────
-function switchTab(tab) {
+function showTab(tab) {
     document.querySelectorAll('.aff-tab').forEach(function(t, i) {
         t.classList.toggle('active', (tab === 'login' ? i === 0 : i === 1));
     });
     document.getElementById('form-login').classList.toggle('active', tab === 'login');
     document.getElementById('form-register').classList.toggle('active', tab === 'register');
-    hideMsg();
 }
 
-// ─── Mensagens ───────────────────────────────────────
-function showMsg(text, type) {
-    var el = document.getElementById('auth-msg');
-    el.textContent = text;
-    el.className = 'aff-msg ' + type;
-}
-function hideMsg() {
-    var el = document.getElementById('auth-msg');
-    el.className = 'aff-msg';
-    el.textContent = '';
-}
-
-// ─── Máscara de telefone ─────────────────────────────
 function maskPhone(input) {
     var v = input.value.replace(/\D/g, '');
     if (v.length <= 10) {
@@ -146,136 +346,8 @@ function maskPhone(input) {
     input.value = v;
 }
 
-// ─── LOGIN ───────────────────────────────────────────
-function doLogin(e) {
-    e.preventDefault();
-    var btn = document.getElementById('btn-login');
-    var phone = document.getElementById('login-phone').value;
-    btn.disabled = true;
-    btn.textContent = 'Entrando...';
-    hideMsg();
-
-    ajax('POST', API + '?action=login', 'phone=' + encodeURIComponent(phone), function(r) {
-        if (r.status === 'success') {
-            showMsg(r.msg, 'success');
-            setTimeout(function() {
-                document.getElementById('auth-section').style.display = 'none';
-                var dash = document.getElementById('dashboard-section');
-                dash.classList.add('active');
-                dash.style.display = '';
-                loadDashboard();
-            }, 600);
-        } else {
-            showMsg(r.msg || 'Erro ao entrar.', 'error');
-            btn.disabled = false;
-            btn.textContent = 'Entrar';
-        }
-    });
-    return false;
-}
-
-// ─── CADASTRO ────────────────────────────────────────
-function doRegister(e) {
-    e.preventDefault();
-    var btn = document.getElementById('btn-register');
-    var firstname = document.getElementById('reg-firstname').value;
-    var lastname = document.getElementById('reg-lastname').value;
-    var phone = document.getElementById('reg-phone').value;
-    btn.disabled = true;
-    btn.textContent = 'Criando conta...';
-    hideMsg();
-
-    var body = 'firstname=' + encodeURIComponent(firstname)
-             + '&lastname=' + encodeURIComponent(lastname)
-             + '&phone=' + encodeURIComponent(phone);
-
-    ajax('POST', API + '?action=register', body, function(r) {
-        if (r.status === 'success') {
-            showMsg(r.msg, 'success');
-            setTimeout(function() {
-                document.getElementById('auth-section').style.display = 'none';
-                var dash = document.getElementById('dashboard-section');
-                dash.classList.add('active');
-                dash.style.display = '';
-                loadDashboard();
-            }, 600);
-        } else {
-            showMsg(r.msg || 'Erro no cadastro.', 'error');
-            btn.disabled = false;
-            btn.textContent = '🚀 Criar conta e ser Afiliado';
-        }
-    });
-    return false;
-}
-
-// ─── DASHBOARD ───────────────────────────────────────
-function loadDashboard() {
-    document.getElementById('dash-loading').style.display = '';
-    document.getElementById('dash-content').style.display = 'none';
-
-    ajax('GET', API + '?action=dashboard', null, function(r) {
-        document.getElementById('dash-loading').style.display = 'none';
-
-        if (r.status !== 'success') {
-            // Sessão expirou
-            document.getElementById('dashboard-section').classList.remove('active');
-            document.getElementById('auth-section').style.display = '';
-            showMsg('Sessão expirada. Faça login novamente.', 'error');
-            return;
-        }
-
-        document.getElementById('dash-content').style.display = '';
-        document.getElementById('dash-nome').textContent = r.nome;
-        document.getElementById('dash-pending').textContent = 'R$' + r.amount_pending;
-        document.getElementById('dash-paid').textContent = 'R$' + r.amount_paid;
-        document.getElementById('dash-vendas').textContent = r.total_vendas;
-        document.getElementById('dash-pct').textContent = r.percentage + '%';
-        document.getElementById('dash-link').value = r.link;
-
-        // Renderizar vendas
-        var list = document.getElementById('dash-vendas-list');
-        list.innerHTML = '';
-
-        if (!r.vendas || r.vendas.length === 0) {
-            list.innerHTML = '<div class="aff-empty"><span>📭</span>Nenhuma venda registrada ainda.<br>Compartilhe seu link!</div>';
-            return;
-        }
-
-        r.vendas.forEach(function(v) {
-            var statusClass = v.status === 2 ? 'pago' : (v.status === 3 ? 'cancelado' : 'pendente');
-            var statusText = v.status === 2 ? 'Pago' : (v.status === 3 ? 'Cancelado' : 'Pendente');
-
-            list.innerHTML += '<div class="aff-venda-item">'
-                + '<div class="aff-venda-info">'
-                + '<h4>' + (v.produto || 'Pedido #' + v.id) + '</h4>'
-                + '<p>' + v.cliente + ' · ' + v.data + '</p>'
-                + '</div>'
-                + '<div class="aff-venda-right">'
-                + '<div class="aff-venda-valor">R$' + v.valor + '</div>'
-                + '<span class="aff-badge ' + statusClass + '">' + statusText + '</span>'
-                + '</div>'
-                + '</div>';
-        });
-    });
-}
-
-// ─── LOGOUT ──────────────────────────────────────────
-function doLogout() {
-    ajax('GET', API + '?action=logout', null, function() {
-        document.getElementById('dashboard-section').classList.remove('active');
-        document.getElementById('dash-content').style.display = 'none';
-        document.getElementById('auth-section').style.display = '';
-        document.getElementById('btn-login').disabled = false;
-        document.getElementById('btn-login').textContent = 'Entrar';
-        document.getElementById('btn-register').disabled = false;
-        document.getElementById('btn-register').textContent = '🚀 Criar conta e ser Afiliado';
-        hideMsg();
-    });
-}
-
-// ─── COPIAR LINK ─────────────────────────────────────
 function copyLink() {
-    var input = document.getElementById('dash-link');
+    var input = document.getElementById('aff-link');
     input.select();
     input.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(input.value).then(function() {
@@ -286,30 +358,6 @@ function copyLink() {
         document.execCommand('copy');
     });
 }
-
-// ─── AJAX helper (vanilla) ───────────────────────────
-function ajax(method, url, body, cb) {
-    var xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
-    if (method === 'POST') {
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    }
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            try {
-                cb(JSON.parse(xhr.responseText));
-            } catch(e) {
-                cb({ status: 'failed', msg: 'Erro inesperado.' });
-            }
-        }
-    };
-    xhr.send(body);
-}
-
-// ─── Auto-load dashboard se logado ───────────────────
-<?php if ($logged): ?>
-loadDashboard();
-<?php endif; ?>
 </script>
 
 </body>
