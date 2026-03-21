@@ -1675,6 +1675,42 @@ class Main extends DBConnection
                     $arrValues = array_filter(
                         explode(",", implode(",", $cotas_vendidas))
                     );
+
+                    // Verificar se os números escolhidos estão no range de cotas de rua
+                    $_rua_check_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+                    $_rua_ranges_manual = [];
+                    if (!empty($_rua_check_data['cotas_rua_ranges'])) {
+                        $_decoded_manual = json_decode($_rua_check_data['cotas_rua_ranges'], true);
+                        if (is_array($_decoded_manual) && count($_decoded_manual) > 0) {
+                            $_rua_ranges_manual = $_decoded_manual;
+                        }
+                    }
+                    if (empty($_rua_ranges_manual) && !empty($_rua_check_data['cotas_rua_inicio']) && !empty($_rua_check_data['cotas_rua_fim'])) {
+                        $_rua_ranges_manual = [['inicio' => (int)$_rua_check_data['cotas_rua_inicio'], 'fim' => (int)$_rua_check_data['cotas_rua_fim']]];
+                    }
+                    if (!empty($_rua_ranges_manual)) {
+                        $numeros_bloqueados_manual = [];
+                        foreach ($numbers as $num) {
+                            $num_int = (int)$num;
+                            foreach ($_rua_ranges_manual as $_rm) {
+                                if ($num_int >= (int)$_rm['inicio'] && $num_int <= (int)$_rm['fim']) {
+                                    $numeros_bloqueados_manual[] = $num;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!empty($numeros_bloqueados_manual)) {
+                            $bloqueados_str = implode(',', $numeros_bloqueados_manual);
+                            $resp['status'] = 'failed';
+                            $resp['error'] = (count($numeros_bloqueados_manual) > 1 ? 'Os números ' . $bloqueados_str . ' estão reservados para venda presencial.' : 'O número ' . $bloqueados_str . ' está reservado para venda presencial.');
+                            $this->conn->query('DELETE FROM `order_list` where code = \'' . $code . '\'');
+                            $this->conn->query('UPDATE `product_list` SET `pending_numbers` = `pending_numbers` - \'' . $total_numbers_generated . '\' WHERE `id` = \'' . $product_id . '\'');
+                            flock($lock, LOCK_UN);
+                            fclose($lock);
+                            return json_encode($resp);
+                        }
+                    }
+
                     $result = $this->is_in_array($numbers, $arrValues);
 
                     if ($result) {
@@ -1743,9 +1779,17 @@ class Main extends DBConnection
                         $cotas_vendidas[] = $cotas_premiadas;
                     }
 
-                    $all_lucky_numbers = array_filter(array_map('trim', array_merge(...array_map(function ($cota) {
-                        return explode(',', $cota);
-                    }, $cotas_vendidas))));
+                    $all_lucky_numbers = [];
+                    if (!empty($cotas_vendidas)) {
+                        $raw_parts = [];
+                        foreach ($cotas_vendidas as $_cv) {
+                            foreach (explode(',', $_cv) as $_p) {
+                                $_p = trim($_p);
+                                if ($_p !== '') $raw_parts[] = $_p;
+                            }
+                        }
+                        $all_lucky_numbers = $raw_parts;
+                    }
                     if ($qty_numbers < $total_numbers_generated + count($all_lucky_numbers) - 1) {
                         $resp["status"] = "failed";
                         $resp["error"] = "[DP01] - Erro ao criar pedido, selecione uma quantidade menor.";
@@ -1756,10 +1800,59 @@ class Main extends DBConnection
                         return $resp;
                     }
 
-                    // Ensure $all_lucky_numbers contains integers
-                    $sold_numbers_set = array_flip($all_lucky_numbers);
+                    // Calcular padding (globos) — igual ao save_cotas_rua_ranges: strlen(qty_numbers - 1)
+                    // Aqui $qty_numbers ja e original menos 1 (decrementado antes)
+                    $globos = strlen((string)($qty_numbers));
+
+                    // Carregar ranges de cotas de rua para excluir da geração automática
+                    $_rua_auto_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . (int)$product_id . '\'')->fetch_assoc();
+                    $_rua_ranges_auto = [];
+                    if (!empty($_rua_auto_data['cotas_rua_ranges'])) {
+                        $_decoded_auto = json_decode($_rua_auto_data['cotas_rua_ranges'], true);
+                        if (is_array($_decoded_auto) && count($_decoded_auto) > 0) {
+                            $_rua_ranges_auto = $_decoded_auto;
+                        }
+                    }
+                    if (empty($_rua_ranges_auto) && !empty($_rua_auto_data['cotas_rua_inicio']) && !empty($_rua_auto_data['cotas_rua_fim'])) {
+                        $_rua_ranges_auto = [['inicio' => (int)$_rua_auto_data['cotas_rua_inicio'], 'fim' => (int)$_rua_auto_data['cotas_rua_fim']]];
+                    }
+
+                    // Montar set de proibidos: numeros ja vendidos + cotas de rua
+                    $sold_numbers_set = [];
+                    foreach ($all_lucky_numbers as $_n) {
+                        $sold_numbers_set[$_n] = true;
+                    }
+                    foreach ($_rua_ranges_auto as $_ra) {
+                        for ($r = (int)$_ra['inicio']; $r <= (int)$_ra['fim']; $r++) {
+                            $sold_numbers_set[str_pad($r, $globos, '0', STR_PAD_LEFT)] = true;
+                        }
+                    }
+
                     $numeris = [];
-                    $globos = strlen((string) ($qty_numbers));
+                    // [DEBUG COTAS RUA] — remover após confirmar funcionamento
+                    $dbg = date('Y-m-d H:i:s')
+                        . ' product=' . $product_id
+                        . ' qty_numbers(decr)=' . $qty_numbers
+                        . ' globos=' . $globos
+                        . ' total_gen=' . $total_numbers_generated
+                        . ' ranges=' . json_encode($_rua_ranges_auto)
+                        . ' sold_set_count=' . count($sold_numbers_set)
+                        . ' num001_blocked=' . (isset($sold_numbers_set[str_pad(1, $globos, '0', STR_PAD_LEFT)]) ? 'SIM' : 'NAO')
+                        . ' num001_key=' . str_pad(1, $globos, '0', STR_PAD_LEFT)
+                        . "\n";
+                    file_put_contents($_SERVER['DOCUMENT_ROOT'] . '/debug_cotas_rua.log', $dbg, FILE_APPEND | LOCK_EX);
+                    // Verificar se há números livres suficientes antes de sortear
+                    $total_slots = $qty_numbers + 1; // 0..qty_numbers inclusive
+                    $available = $total_slots - count($sold_numbers_set);
+                    if ($available < $total_numbers_generated) {
+                        $resp['status'] = 'failed';
+                        $resp['error'] = 'As cotas acabaram.';
+                        $this->conn->query("DELETE FROM `order_list` WHERE code = '$code'");
+                        $this->conn->query("UPDATE `product_list` SET `pending_numbers` = `pending_numbers` - '$total_numbers_generated' WHERE `id` = '$product_id'");
+                        flock($lock, LOCK_UN);
+                        fclose($lock);
+                        return json_encode($resp);
+                    }
 
                     while (count($numeris) < $total_numbers_generated) {
                         $random_number = mt_rand(0, $qty_numbers);
@@ -3655,8 +3748,8 @@ class Main extends DBConnection
 
             $all_lucky_numbers = [];
             $orders = $this->conn->query("SELECT o.*
-	FROM `order_list` o 	
-	WHERE o.product_id = '{$id}'");
+    FROM `order_list` o     
+    WHERE o.product_id = '{$id}'");
 
             while ($row1 = $orders->fetch_assoc()) {
                 $all_lucky_numbers[] = $row1["order_numbers"];
@@ -3776,9 +3869,9 @@ class Main extends DBConnection
 
             //$qty_numbers = $qty_numbers - 1;
             $total_numbers_generated = 25;
-            /*	if($pending_numbers || $paid_numbers){
+            /*  if($pending_numbers || $paid_numbers){
     $total_numbers_generated = $qty_numbers - ($pending_numbers + $paid_numbers);
-	} */
+    } */
 
             $all_lucky_numbers = [];
             $orders = $this->conn->query("

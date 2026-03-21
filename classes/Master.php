@@ -36,6 +36,7 @@ class Master extends DBConnection
 		$name = $this->conn->real_escape_string(filter_var($_POST['name'], FILTER_SANITIZE_SPECIAL_CHARS));
 		$description = $this->conn->real_escape_string(filter_var($_POST['description'], FILTER_SANITIZE_SPECIAL_CHARS));
 		$type_of_draw = $this->conn->real_escape_string($_POST['type_of_draw']);
+		// testando comentário
 		$qty_numbers = $this->conn->real_escape_string($_POST['qty_numbers']);
 
 		if ($type_of_draw == 3) {
@@ -825,15 +826,27 @@ error_reporting(1);
 				$arrValues = array_filter(explode(',', implode(',', $cotas_vendidas)));
 
 				// Verificar se os números escolhidos estão no range de cotas de rua
-				$cotas_rua_check = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, qty_numbers FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
-				if (!empty($cotas_rua_check['cotas_rua_inicio']) && !empty($cotas_rua_check['cotas_rua_fim'])) {
-					$rua_inicio = (int)$cotas_rua_check['cotas_rua_inicio'];
-					$rua_fim = (int)$cotas_rua_check['cotas_rua_fim'];
+				$cotas_rua_check = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges, qty_numbers FROM product_list WHERE id = \'' . $product_id . '\''')->fetch_assoc();
+				// Montar lista de ranges: prioriza cotas_rua_ranges (JSON), com fallback para campos legados
+				$_rua_ranges_check = [];
+				if (!empty($cotas_rua_check['cotas_rua_ranges'])) {
+					$_decoded_check = json_decode($cotas_rua_check['cotas_rua_ranges'], true);
+					if (is_array($_decoded_check) && count($_decoded_check) > 0) {
+						$_rua_ranges_check = $_decoded_check;
+					}
+				}
+				if (empty($_rua_ranges_check) && !empty($cotas_rua_check['cotas_rua_inicio']) && !empty($cotas_rua_check['cotas_rua_fim'])) {
+					$_rua_ranges_check = [['inicio' => (int)$cotas_rua_check['cotas_rua_inicio'], 'fim' => (int)$cotas_rua_check['cotas_rua_fim']]];
+				}
+				if (!empty($_rua_ranges_check)) {
 					$numeros_bloqueados = [];
 					foreach ($numbers as $num) {
 						$num_int = (int)$num;
-						if ($num_int >= $rua_inicio && $num_int <= $rua_fim) {
-							$numeros_bloqueados[] = $num;
+						foreach ($_rua_ranges_check as $_rc) {
+							if ($num_int >= (int)$_rc['inicio'] && $num_int <= (int)$_rc['fim']) {
+								$numeros_bloqueados[] = $num;
+								break;
+							}
 						}
 					}
 					if (!empty($numeros_bloqueados)) {
@@ -883,12 +896,24 @@ error_reporting(1);
 $globos = strlen($qty_numbers);
 $numeris = [];
 
-// Carregar range de cotas de rua para excluir da geração automática
-$cotas_rua_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+// Carregar ranges de cotas de rua para excluir da geração automática (suporta múltiplos ranges)
+$cotas_rua_data = $this->conn->query('SELECT cotas_rua_inicio, cotas_rua_fim, cotas_rua_ranges FROM product_list WHERE id = \'' . $product_id . '\'')->fetch_assoc();
+$_rua_ranges_auto = [];
+if (!empty($cotas_rua_data['cotas_rua_ranges'])) {
+    $_decoded_auto = json_decode($cotas_rua_data['cotas_rua_ranges'], true);
+    if (is_array($_decoded_auto) && count($_decoded_auto) > 0) {
+        $_rua_ranges_auto = $_decoded_auto;
+    }
+}
+if (empty($_rua_ranges_auto) && !empty($cotas_rua_data['cotas_rua_inicio']) && !empty($cotas_rua_data['cotas_rua_fim'])) {
+    $_rua_ranges_auto = [['inicio' => (int)$cotas_rua_data['cotas_rua_inicio'], 'fim' => (int)$cotas_rua_data['cotas_rua_fim']]];
+}
 $numeros_rua = [];
-if (!empty($cotas_rua_data['cotas_rua_inicio']) && !empty($cotas_rua_data['cotas_rua_fim'])) {
-    for ($r = (int)$cotas_rua_data['cotas_rua_inicio']; $r <= (int)$cotas_rua_data['cotas_rua_fim']; $r++) {
-        $numeros_rua[] = str_pad($r, max((int) $globos, strlen($qty_numbers)), "0", STR_PAD_LEFT);
+if (!empty($_rua_ranges_auto)) {
+    foreach ($_rua_ranges_auto as $_ra) {
+        for ($r = (int)$_ra['inicio']; $r <= (int)$_ra['fim']; $r++) {
+            $numeros_rua[] = str_pad($r, max((int) $globos, strlen($qty_numbers)), "0", STR_PAD_LEFT);
+        }
     }
 }
 
