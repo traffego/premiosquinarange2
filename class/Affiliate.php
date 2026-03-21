@@ -1,11 +1,14 @@
 <?php
 
-// Captura e descarta qualquer output do settings.php (ob_end_flush interno)
+// Captura e descarta qualquer output gerado pelo settings.php e seus includes
 ob_start();
 require_once(dirname(__DIR__) . '/settings.php');
-ob_end_clean();
+// Limpa TODOS os buffers de output (settings.php cria seus próprios buffers internos)
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 
-// Agora sim: header JSON limpo
+// Agora sim: header JSON limpo, sem nenhum output anterior
 header('Content-Type: application/json; charset=utf-8');
 
 class Affiliate extends DBConnection
