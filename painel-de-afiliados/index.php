@@ -91,10 +91,8 @@ if ($action === 'register') {
         }
         $chk->close();
 
-        // Cria conta nova
-        $date_added = date('Y-m-d H:i:s');
-        $ins = $conn->prepare("INSERT INTO customer_list (firstname, lastname, phone, is_affiliate, date_added) VALUES (?, ?, ?, 1, ?)");
-        $ins->bind_param('ssss', $firstname, $lastname, $phone, $date_added);
+        $ins = $conn->prepare("INSERT INTO customer_list (firstname, lastname, phone, is_affiliate) VALUES (?, ?, ?, 1)");
+        $ins->bind_param('sss', $firstname, $lastname, $phone);
 
         if (!$ins->execute()) {
             $msg = 'Erro ao criar conta. Tente novamente.';
