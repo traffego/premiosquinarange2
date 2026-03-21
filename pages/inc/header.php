@@ -203,9 +203,9 @@ if (isset($parts['query'])) {
                          
                          <?php if ($user_id): ?>
                             <?php if ($affiliate == 1): ?>
-                               <li><a class="text-white" alt="Área do Afiliado" href="/user/afiliado"><i class="icone bi bi-share"></i><span>Afiliados</span></a></li>
+                               <li><a class="text-white" alt="Área do Afiliado" href="/painel-de-afiliados/"><i class="icone bi bi-share"></i><span>Afiliados</span></a></li>
                             <?php else: ?>
-                               <li><a class="text-white" alt="Quero ser Afiliado" href="/user/afiliado-cadastro"><i class="icone bi bi-person-plus-fill"></i><span>Quero ser Afiliado</span></a></li>
+                               <li><a class="text-white" alt="Quero ser Afiliado" href="/painel-de-afiliados/"><i class="icone bi bi-person-plus-fill"></i><span>Quero ser Afiliado</span></a></li>
                             <?php endif; ?>
                             <!-- <li><a alt="Atualizar cadastro" class="text-white" href="/perfil"><i class="icone bi bi-person"></i><span>Perfil</span></a></li> -->
                          <?php else: ?>
@@ -401,14 +401,14 @@ if (isset($parts['query'])) {
                                       value="<?= htmlspecialchars(BASE_REF . '?&ref=' . $aff_referral_code) ?>">
                                <button class="aff-link-copy-btn" onclick="copyHdrAffLink()">📋 Copiar</button>
                            </div>
-                           <a href="/user/afiliado" class="btn-aff-full">Ver painel completo →</a>
+                           <a href="/painel-de-afiliados/" class="btn-aff-full">Ver painel completo →</a>
                        </div>
 
                    <?php elseif ($user_id && $affiliate != 1): ?>
                        <!-- LOGADO, NÃO É AFILIADO -->
                        <div class="aff-card-join">
                            <p>💰 Ganhe comissão por cada venda indicada. Cadastre-se como afiliado!</p>
-                           <a href="/user/afiliado-cadastro" class="btn-join-aff">🚀 Quero ser Afiliado</a>
+                           <a href="/painel-de-afiliados/" class="btn-join-aff">🚀 Quero ser Afiliado</a>
                        </div>
 
                    <?php else: ?>
@@ -417,7 +417,7 @@ if (isset($parts['query'])) {
                            <p>💰 Já é afiliado? Entre para ver seu painel. Ou cadastre-se gratuitamente!</p>
                            <div class="aff-guest-btns">
                                <a href="/cadastrar" class="btn-aff-login">👤 Login</a>
-                               <a href="/user/afiliado-cadastro" class="btn-aff-register">🚀 Ser Afiliado</a>
+                               <a href="/painel-de-afiliados/" class="btn-aff-register">🚀 Ser Afiliado</a>
                            </div>
                        </div>
                    <?php endif; ?>
