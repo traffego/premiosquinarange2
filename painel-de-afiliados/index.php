@@ -147,14 +147,14 @@ if (aff_logged_in()) {
 
         // Lista de vendas
         $list = $conn->query("
-            SELECT o.id, o.order_total, o.status, o.date_added,
+            SELECT o.id, o.total_amount, o.quantity, o.status, o.date_created,
                    c.firstname, c.lastname,
                    p.name as product_name
             FROM order_list o
             LEFT JOIN customer_list c ON c.id = o.customer_id
             LEFT JOIN product_list p ON p.id = o.product_id
             WHERE o.referral_id = '" . $conn->real_escape_string($referral_code) . "'
-            ORDER BY o.date_added DESC
+            ORDER BY o.date_created DESC
             LIMIT 50
         ");
         if ($list) {
@@ -312,10 +312,10 @@ function status_badge($status) {
                 <div class="aff-venda-item">
                     <div class="aff-venda-info">
                         <h4><?= htmlspecialchars($v['product_name'] ?: 'Pedido #' . $v['id']) ?></h4>
-                        <p><?= htmlspecialchars($v['firstname'] . ' ' . $v['lastname']) ?> · <?= date('d/m/Y H:i', strtotime($v['date_added'])) ?></p>
+                        <p><?= htmlspecialchars($v['firstname'] . ' ' . $v['lastname']) ?> · <?= date('d/m/Y H:i', strtotime($v['date_created'])) ?></p>
                     </div>
                     <div class="aff-venda-right">
-                        <div class="aff-venda-valor">R$<?= number_format($v['order_total'], 2, ',', '.') ?></div>
+                        <div class="aff-venda-valor">R$<?= number_format($v['total_amount'], 2, ',', '.') ?></div>
                         <?= status_badge($v['status']) ?>
                     </div>
                 </div>
