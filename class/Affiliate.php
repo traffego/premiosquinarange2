@@ -1,6 +1,6 @@
 <?php
 
-require_once('../settings.php');
+require_once(dirname(__DIR__) . '/settings.php');
 
 class Affiliate extends DBConnection
 {
@@ -263,6 +263,8 @@ class Affiliate extends DBConnection
 // ─────────────────────────────────────────────────────────────────────
 // Dispatcher
 // ─────────────────────────────────────────────────────────────────────
+header('Content-Type: application/json; charset=utf-8');
+
 $action    = strtolower($_GET['action'] ?? 'none');
 $affiliate = new Affiliate();
 
