@@ -5909,6 +5909,106 @@ class Main extends DBConnection
         $resp['pad'] = $pad;
         return json_encode($resp);
     }
+
+    // ---------------------------------------------------------------
+    // Usuário já logado vira afiliado diretamente (comissão 50%)
+    // ---------------------------------------------------------------
+    public function become_affiliate()
+    {
+        $customer_id = $this->settings->userdata('id');
+        if (!$customer_id) {
+            return json_encode(['status' => 'failed', 'msg' => 'Você precisa estar logado.']);
+        }
+
+        // Já é afiliado?
+        $chk = $this->conn->query("SELECT id FROM referral WHERE customer_id = '$customer_id' LIMIT 1");
+        if ($chk && $chk->num_rows > 0) {
+            return json_encode(['status' => 'failed', 'msg' => 'Você já é afiliado.']);
+        }
+
+        // Gera código único
+        $code = '';
+        do {
+            $code = strtolower(substr(md5(uniqid($customer_id, true)), 0, 8));
+            $exists = $this->conn->query("SELECT id FROM referral WHERE referral_code = '$code' LIMIT 1");
+        } while ($exists && $exists->num_rows > 0);
+
+        $ins = $this->conn->query(
+            "INSERT INTO referral (customer_id, referral_code, percentage, status, amount_pending, amount_paid)
+             VALUES ('$customer_id', '$code', '50', '1', '0', '0')"
+        );
+
+        if (!$ins) {
+            return json_encode(['status' => 'failed', 'msg' => 'Erro ao criar afiliado: ' . $this->conn->error]);
+        }
+
+        // Marca is_affiliate = 1 no customer_list
+        $this->conn->query("UPDATE customer_list SET is_affiliate = 1 WHERE id = '$customer_id'");
+
+        // Atualiza sessão para refletir mudança imediatamente
+        $_SESSION['is_affiliate'] = 1;
+
+        return json_encode(['status' => 'success', 'msg' => 'Cadastro realizado com sucesso!', 'code' => $code]);
+    }
+
+    // ---------------------------------------------------------------
+    // Usuário deslogado: cria conta + vira afiliado em uma etapa
+    // ---------------------------------------------------------------
+    public function register_and_become_affiliate()
+    {
+        $firstname = $this->conn->real_escape_string(trim($_POST['firstname'] ?? ''));
+        $lastname  = $this->conn->real_escape_string(trim($_POST['lastname']  ?? ''));
+        $phone_raw = preg_replace('/\D/', '', $_POST['phone'] ?? '');
+        $phone     = $this->conn->real_escape_string($phone_raw);
+
+        if (!$firstname || !$lastname || strlen($phone) < 10) {
+            return json_encode(['status' => 'failed', 'msg' => 'Preencha todos os campos corretamente.']);
+        }
+
+        // Verifica duplicata de telefone
+        $chkPhone = $this->conn->query("SELECT id FROM customer_list WHERE phone = '$phone' LIMIT 1");
+        if ($chkPhone && $chkPhone->num_rows > 0) {
+            return json_encode(['status' => 'failed', 'msg' => 'Já existe uma conta com esse telefone. Faça login para continuar.']);
+        }
+
+        // Cria o cliente
+        $insCustomer = $this->conn->query(
+            "INSERT INTO customer_list (firstname, lastname, phone, is_affiliate, date_created)
+             VALUES ('$firstname', '$lastname', '$phone', 1, NOW())"
+        );
+
+        if (!$insCustomer) {
+            return json_encode(['status' => 'failed', 'msg' => 'Erro ao criar conta: ' . $this->conn->error]);
+        }
+
+        $customer_id = $this->conn->insert_id;
+
+        // Gera código de referral único
+        $code = '';
+        do {
+            $code = strtolower(substr(md5(uniqid($customer_id, true)), 0, 8));
+            $exists = $this->conn->query("SELECT id FROM referral WHERE referral_code = '$code' LIMIT 1");
+        } while ($exists && $exists->num_rows > 0);
+
+        $insRef = $this->conn->query(
+            "INSERT INTO referral (customer_id, referral_code, percentage, status, amount_pending, amount_paid)
+             VALUES ('$customer_id', '$code', '50', '1', '0', '0')"
+        );
+
+        if (!$insRef) {
+            return json_encode(['status' => 'failed', 'msg' => 'Conta criada, mas erro ao ativar afiliado: ' . $this->conn->error]);
+        }
+
+        // Loga o usuário automaticamente
+        $_SESSION['userdata']['id']           = $customer_id;
+        $_SESSION['userdata']['firstname']    = $firstname;
+        $_SESSION['userdata']['lastname']     = $lastname;
+        $_SESSION['userdata']['phone']        = $phone;
+        $_SESSION['userdata']['is_affiliate'] = 1;
+        $_SESSION['userdata']['type']         = 0; // cliente comum
+
+        return json_encode(['status' => 'success', 'msg' => 'Cadastro realizado com sucesso!', 'code' => $code]);
+    }
 }
 
 require_once "../settings.php";
