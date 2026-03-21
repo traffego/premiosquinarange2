@@ -92,90 +92,19 @@ class Affiliate extends DBConnection
 
     public function register_and_become_affiliate()
     {
-        $firstname = isset($_POST['firstname']) ? trim($_POST['firstname']) : '';
-        $lastname  = isset($_POST['lastname'])  ? trim($_POST['lastname'])  : '';
-        $phone     = isset($_POST['phone'])     ? preg_replace('/[^0-9]/', '', $_POST['phone']) : '';
+        // Usa o mesmo fluxo de cadastro do Customer.php
+        require_once(dirname(__FILE__) . '/Customer.php');
+        $customer = new Customer();
+        $result = $customer->registration();
+        $resp = json_decode($result, true);
 
-        if (!$firstname || !$lastname || !$phone) {
-            return json_encode(array('status' => 'failed', 'msg' => 'Preencha todos os campos.'));
+        // Se o cadastro falhou (telefone/cpf/email duplicado, etc), retorna o erro original
+        if ($resp['status'] !== 'success') {
+            return $result;
         }
 
-        if (strlen($phone) < 10) {
-            return json_encode(array('status' => 'failed', 'msg' => 'Telefone invalido.'));
-        }
-
-        // Verifica se o telefone já existe
-        $chk = $this->conn->prepare("SELECT id, is_affiliate FROM customer_list WHERE phone = ? LIMIT 1");
-        $chk->bind_param('s', $phone);
-        $chk->execute();
-        $res = $chk->get_result();
-
-        if ($res->num_rows > 0) {
-            $existing = $res->fetch_assoc();
-            $chk->close();
-            $customer_id = $existing['id'];
-
-            // Faz login automático
-            $row_full = $this->conn->query("SELECT * FROM customer_list WHERE id = '" . intval($customer_id) . "' LIMIT 1")->fetch_assoc();
-            foreach ($row_full as $k => $v) {
-                $this->settings->set_userdata($k, $v);
-            }
-            $this->settings->set_userdata('login_type', 2);
-
-            // Se já é afiliado, retorna sucesso direto
-            if ($existing['is_affiliate'] == 1) {
-                return json_encode(array('status' => 'success', 'msg' => 'Voce ja e afiliado!'));
-            }
-
-            // Vira afiliado
-            return $this->become_affiliate();
-        }
-        $chk->close();
-
-        // Cria nova conta
-        $date_added = date('Y-m-d H:i:s');
-        $ins = $this->conn->prepare(
-            "INSERT INTO customer_list (firstname, lastname, phone, is_affiliate, date_added) VALUES (?, ?, ?, 0, ?)"
-        );
-        $ins->bind_param('ssss', $firstname, $lastname, $phone, $date_added);
-
-        if (!$ins->execute()) {
-            return json_encode(array('status' => 'failed', 'msg' => 'Erro ao criar conta. Tente novamente.'));
-        }
-
-        $customer_id = $this->conn->insert_id;
-        $ins->close();
-
-        // Faz login automático com os dados recém criados
-        $row_full = $this->conn->query("SELECT * FROM customer_list WHERE id = '" . intval($customer_id) . "' LIMIT 1")->fetch_assoc();
-        foreach ($row_full as $k => $v) {
-            $this->settings->set_userdata($k, $v);
-        }
-        $this->settings->set_userdata('login_type', 2);
-
-        // Cria o registro de afiliado
-        $code       = $this->generate_referral_code();
-        $percentage = $this->default_percentage();
-
-        $stmt = $this->conn->prepare(
-            "INSERT INTO referral (customer_id, referral_code, percentage, amount_pending, amount_paid, status) VALUES (?, ?, ?, 0, 0, 1)"
-        );
-        $stmt->bind_param('isi', $customer_id, $code, $percentage);
-
-        if (!$stmt->execute()) {
-            return json_encode(array('status' => 'failed', 'msg' => 'Conta criada, mas erro ao cadastrar afiliado. Tente novamente.'));
-        }
-        $stmt->close();
-
-        // Marca como afiliado
-        $upd = $this->conn->prepare("UPDATE customer_list SET is_affiliate = 1 WHERE id = ?");
-        $upd->bind_param('i', $customer_id);
-        $upd->execute();
-        $upd->close();
-
-        $this->settings->set_userdata('is_affiliate', 1);
-
-        return json_encode(array('status' => 'success', 'msg' => 'Conta criada com sucesso! Seja bem-vindo ao programa de afiliados.'));
+        // Usuário criado e logado com sucesso — agora vira afiliado
+        return $this->become_affiliate();
     }
 
     public function get_affiliate_link()
