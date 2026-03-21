@@ -12,6 +12,7 @@ RewriteRule ^user/compras$ /?p=pages/orders [L]
 RewriteRule ^user/alterar-senha$ /?p=pages/change-password [L]
 RewriteRule ^user/atualizar-cadastro$ /?p=pages/update-registration [L]
 RewriteRule ^user/afiliado$ /?p=pages/affiliate [L]
+RewriteRule ^user/afiliado-cadastro$ /?p=pages/affiliate-request [L]
 
 RewriteRule ^cadastrar$ /?p=pages/register [L]
 RewriteRule ^meus-numeros$ /?p=pages/my-numbers [L]
