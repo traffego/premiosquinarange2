@@ -1104,6 +1104,58 @@ class Main extends DBConnection
         return json_encode($resp);
     }
 
+    public function register_and_become_affiliate()
+    {
+        $firstname = $this->conn->real_escape_string(trim($_POST['firstname'] ?? ''));
+        $lastname  = $this->conn->real_escape_string(trim($_POST['lastname'] ?? ''));
+        $phone     = preg_replace('/[^0-9]/', '', $_POST['phone'] ?? '');
+
+        if (empty($firstname) || empty($lastname) || empty($phone)) {
+            return json_encode(['status' => 'failed', 'msg' => 'Preencha todos os campos.']);
+        }
+
+        // Verifica se já existe usuário com esse telefone
+        $check = $this->conn->query("SELECT id, is_affiliate FROM customer_list WHERE phone = '$phone' LIMIT 1");
+        if ($check && $check->num_rows > 0) {
+            $row = $check->fetch_assoc();
+            $customer_id = $row['id'];
+            if ($row['is_affiliate'] == 1) {
+                return json_encode(['status' => 'failed', 'msg' => 'Este telefone já é um afiliado cadastrado.']);
+            }
+        } else {
+            // Cria novo usuário
+            $this->conn->query(
+                "INSERT INTO customer_list (firstname, lastname, phone, is_affiliate, date_created)
+                 VALUES ('$firstname', '$lastname', '$phone', 0, NOW())"
+            );
+            $customer_id = $this->conn->insert_id;
+            if (!$customer_id) {
+                return json_encode(['status' => 'failed', 'msg' => 'Erro ao criar conta. Tente novamente.']);
+            }
+        }
+
+        // Verifica se já tem referral (evita duplicata)
+        $chkRef = $this->conn->query("SELECT id FROM referral WHERE customer_id = '$customer_id' LIMIT 1");
+        if ($chkRef && $chkRef->num_rows > 0) {
+            return json_encode(['status' => 'failed', 'msg' => 'Este telefone já está cadastrado como afiliado.']);
+        }
+
+        $percentage = 50;
+        $insert = $this->conn->query(
+            "INSERT INTO referral (status, referral_code, percentage, amount_paid, amount_pending, customer_id)
+             VALUES (1, $customer_id, $percentage, 0, 0, $customer_id)"
+        );
+
+        if ($insert) {
+            $this->conn->query("UPDATE customer_list SET is_affiliate = 1 WHERE id = '$customer_id'");
+            // Faz login automático na sessão
+            $_SESSION['login'] = $customer_id;
+            return json_encode(['status' => 'success', 'msg' => 'Afiliado cadastrado com sucesso!']);
+        }
+
+        return json_encode(['status' => 'failed', 'msg' => 'Erro ao cadastrar afiliado.']);
+    }
+
     public function become_affiliate()
     {
         $customer_id = $this->settings->userdata('id');

@@ -417,7 +417,7 @@ if (isset($parts['query'])) {
                            <p>💰 Já é afiliado? Entre para ver seu painel. Ou cadastre-se gratuitamente!</p>
                            <div class="aff-guest-btns">
                                <a href="/cadastrar" class="btn-aff-login">👤 Login</a>
-                               <a href="/cadastrar?afiliado=1" class="btn-aff-register">🚀 Ser Afiliado</a>
+                               <a href="/user/afiliado-cadastro" class="btn-aff-register">🚀 Ser Afiliado</a>
                            </div>
                        </div>
                    <?php endif; ?>
