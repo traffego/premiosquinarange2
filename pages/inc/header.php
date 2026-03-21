@@ -14,6 +14,25 @@ $google_gtm_id = $_settings->info('google_gtm_id');
 $facebook_access_token = $_settings->info('facebook_access_token');
 $facebook_pixel_id = $_settings->info('facebook_pixel_id');
 $affiliate = $_settings->userdata('is_affiliate');
+
+// Dados resumidos do afiliado (só busca se for afiliado logado)
+$aff_referral_code = '';
+$aff_pending       = 0;
+$aff_paid          = 0;
+$aff_sales_count   = 0;
+if ($user_id && $affiliate == 1) {
+    $qryAffHdr = $conn->query("SELECT referral_code, amount_pending, amount_paid FROM referral WHERE customer_id = '$user_id' LIMIT 1");
+    if ($qryAffHdr && $qryAffHdr->num_rows > 0) {
+        $rowAffHdr         = $qryAffHdr->fetch_assoc();
+        $aff_referral_code = $rowAffHdr['referral_code'];
+        $aff_pending       = $rowAffHdr['amount_pending'];
+        $aff_paid          = $rowAffHdr['amount_paid'];
+        $qryAffCnt = $conn->query("SELECT COUNT(id) as total FROM order_list WHERE referral_id = '$aff_referral_code'");
+        if ($qryAffCnt && $qryAffCnt->num_rows > 0) {
+            $aff_sales_count = $qryAffCnt->fetch_assoc()['total'];
+        }
+    }
+}
 $url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 $parts = parse_url($url);
 $path_name = $parts['path'];
@@ -176,32 +195,252 @@ if (isset($parts['query'])) {
                            </a>
                         </div>
                      </div>
-                  <?php endif; ?>
+                  <?php endif; ?>                   <nav class="nav-vertical nav-submenu font-xs mb-2">
+                      <ul>
+                         <li><a class="text-white" alt="Página Principal" href="/"><i class="icone bi bi-house"></i><span>Início</span></a></li>
+                         <li><a class="text-white" alt="Campanhas" href="/campanhas"><i class="icone bi bi-megaphone"></i><span>Campanhas</span></a></li>
+                         <li><a class="text-white" alt="Meus Números" href="/meus-numeros"><i class="icone bi bi-card-list"></i><span>Meus números Novo</span></a></li>
+                         
+                         <?php if ($user_id): ?>
+                            <?php if ($affiliate == 1): ?>
+                               <li><a class="text-white" alt="Área do Afiliado" href="/user/afiliado"><i class="icone bi bi-share"></i><span>Afiliados</span></a></li>
+                            <?php else: ?>
+                               <li><a class="text-white" alt="Quero ser Afiliado" href="/user/afiliado-cadastro"><i class="icone bi bi-person-plus-fill"></i><span>Quero ser Afiliado</span></a></li>
+                            <?php endif; ?>
+                            <!-- <li><a alt="Atualizar cadastro" class="text-white" href="/perfil"><i class="icone bi bi-person"></i><span>Perfil</span></a></li> -->
+                         <?php else: ?>
+                            <li><a alt="Cadastrar" class="text-white" href="/cadastrar"><i class="icone bi bi-person-plus"></i><span>Cadastrar</span></a></li>
+                            <!-- <li><a alt="Entrar" class="text-white" href="/login"><i class="icone bi bi-person-circle"></i><span>Entrar</span></a></li> -->
+                         <?php endif; ?>
+                         
+                         <li><a href="<?php echo BASE_URL; ?>contato" class="text-white"><i class="icone bi bi-chat-dots-fill"></i><span>Fale Conosco</span></a></li>
+                         <li><a href="<?php echo BASE_URL . 'logout?' . $_SERVER['REQUEST_URI']; ?>" class="text-white"><i class="icone bi bi-box-arrow-right"></i><span>Sair</span></a></li>
+                      </ul>
+                   </nav>
 
-                  <nav class="nav-vertical nav-submenu font-xs mb-2">
-                     <ul>
-                        <li><a class="text-white" alt="Página Principal" href="/"><i class="icone bi bi-house"></i><span>Início</span></a></li>
-                        <li><a class="text-white" alt="Campanhas" href="/campanhas"><i class="icone bi bi-megaphone"></i><span>Campanhas</span></a></li>
-                        <li><a class="text-white" alt="Meus Números" href="/meus-numeros"><i class="icone bi bi-card-list"></i><span>Meus números Novo</span></a></li>
-                        
-                        <?php if ($user_id): ?>
-                           <?php if ($affiliate == 1): ?>
-                              <li><a class="text-white" alt="Área do Afiliado" href="/user/afiliado"><i class="icone bi bi-share"></i><span>Afiliados</span></a></li>
-                           <?php else: ?>
-                              <li><a class="text-white" alt="Quero ser Afiliado" href="/user/afiliado-cadastro"><i class="icone bi bi-person-plus-fill"></i><span>Quero ser Afiliado</span></a></li>
-                           <?php endif; ?>
-                           <!-- <li><a alt="Atualizar cadastro" class="text-white" href="/perfil"><i class="icone bi bi-person"></i><span>Perfil</span></a></li> -->
-                        <?php else: ?>
-                           <li><a alt="Cadastrar" class="text-white" href="/cadastrar"><i class="icone bi bi-person-plus"></i><span>Cadastrar</span></a></li>
-                           <!-- <li><a alt="Entrar" class="text-white" href="/login"><i class="icone bi bi-person-circle"></i><span>Entrar</span></a></li> -->
-                        <?php endif; ?>
-                        
-                        <li><a href="<?php echo BASE_URL; ?>contato" class="text-white"><i class="icone bi bi-chat-dots-fill"></i><span>Fale Conosco</span></a></li>
-                        <li><a href="<?php echo BASE_URL . 'logout?' . $_SERVER['REQUEST_URI']; ?>" class="text-white"><i class="icone bi bi-box-arrow-right"></i><span>Sair</span></a></li>
-                     </ul>
-                  </nav>
-               </div>
-            </div>
-         </div>
-      </div>
-   </menu>
+                   <!-- ===== CARD AFILIADO ===== -->
+                   <style>
+                   .aff-menu-card {
+                       border-radius: 18px;
+                       overflow: hidden;
+                       margin-bottom: 16px;
+                   }
+                   /* Estado: afiliado logado */
+                   .aff-card-active {
+                       background: radial-gradient(103.03% 103.03% at 0% 0%, #d080ff 0%, #6c5dd3 100%);
+                       padding: 18px;
+                       color: #fff;
+                   }
+                   .aff-card-active .aff-card-title {
+                       font-size: 11px;
+                       font-weight: 700;
+                       letter-spacing: .06em;
+                       text-transform: uppercase;
+                       opacity: .8;
+                       margin-bottom: 4px;
+                   }
+                   .aff-card-stats {
+                       display: flex;
+                       gap: 10px;
+                       margin: 10px 0 14px;
+                   }
+                   .aff-card-stat {
+                       flex: 1;
+                       background: rgba(255,255,255,.15);
+                       border-radius: 10px;
+                       padding: 8px 10px;
+                       text-align: center;
+                   }
+                   .aff-card-stat label {
+                       display: block;
+                       font-size: 9px;
+                       font-weight: 600;
+                       opacity: .75;
+                       text-transform: uppercase;
+                       margin-bottom: 2px;
+                   }
+                   .aff-card-stat span {
+                       font-size: 14px;
+                       font-weight: 700;
+                   }
+                   .aff-link-row {
+                       display: flex;
+                       align-items: center;
+                       background: rgba(255,255,255,.15);
+                       border-radius: 10px;
+                       overflow: hidden;
+                       margin-bottom: 10px;
+                   }
+                   .aff-link-row input {
+                       flex: 1;
+                       background: transparent;
+                       border: none;
+                       padding: 8px 10px;
+                       font-size: 11px;
+                       color: #fff;
+                       font-weight: 600;
+                       outline: none;
+                       min-width: 0;
+                   }
+                   .aff-link-copy-btn {
+                       background: #fff;
+                       border: none;
+                       padding: 8px 12px;
+                       color: #6c5dd3;
+                       font-size: 12px;
+                       font-weight: 700;
+                       cursor: pointer;
+                       white-space: nowrap;
+                       transition: background .2s;
+                   }
+                   .aff-link-copy-btn:active { background: #ede9ff; }
+                   .btn-aff-full {
+                       display: block;
+                       text-align: center;
+                       background: rgba(255,255,255,.18);
+                       color: #fff;
+                       border-radius: 12px;
+                       padding: 9px;
+                       font-size: 13px;
+                       font-weight: 700;
+                       text-decoration: none;
+                       transition: background .2s;
+                   }
+                   .btn-aff-full:hover { background: rgba(255,255,255,.28); color:#fff; }
+
+                   /* Estado: logado mas não-afiliado */
+                   .aff-card-join {
+                       background: rgba(108,93,211,.18);
+                       border: 1px solid rgba(108,93,211,.4);
+                       padding: 16px;
+                       text-align: center;
+                   }
+                   .aff-card-join p {
+                       font-size: 12px;
+                       color: #ccc;
+                       margin: 0 0 12px;
+                       line-height: 1.5;
+                   }
+                   .btn-join-aff {
+                       display: block;
+                       background: linear-gradient(135deg, #d080ff 0%, #6c5dd3 100%);
+                       color: #fff;
+                       border-radius: 12px;
+                       padding: 11px;
+                       font-size: 14px;
+                       font-weight: 700;
+                       text-decoration: none;
+                       transition: opacity .2s;
+                   }
+                   .btn-join-aff:hover { opacity: .87; color:#fff; }
+
+                   /* Estado: deslogado */
+                   .aff-card-guest {
+                       background: rgba(255,255,255,.07);
+                       border: 1px solid rgba(255,255,255,.12);
+                       padding: 16px;
+                   }
+                   .aff-card-guest p {
+                       font-size: 12px;
+                       color: #ccc;
+                       margin: 0 0 12px;
+                       line-height: 1.5;
+                       text-align: center;
+                   }
+                   .aff-guest-btns { display: flex; gap: 8px; }
+                   .btn-aff-login {
+                       flex: 1;
+                       text-align: center;
+                       background: rgba(255,255,255,.12);
+                       color: #fff;
+                       border-radius: 10px;
+                       padding: 10px 6px;
+                       font-size: 12px;
+                       font-weight: 700;
+                       text-decoration: none;
+                       border: 1px solid rgba(255,255,255,.2);
+                       transition: background .2s;
+                   }
+                   .btn-aff-login:hover { background: rgba(255,255,255,.22); color:#fff; }
+                   .btn-aff-register {
+                       flex: 1;
+                       text-align: center;
+                       background: linear-gradient(135deg, #d080ff 0%, #6c5dd3 100%);
+                       color: #fff;
+                       border-radius: 10px;
+                       padding: 10px 6px;
+                       font-size: 12px;
+                       font-weight: 700;
+                       text-decoration: none;
+                       transition: opacity .2s;
+                   }
+                   .btn-aff-register:hover { opacity: .87; color:#fff; }
+                   </style>
+
+                   <div class="aff-menu-card">
+                   <?php if ($user_id && $affiliate == 1): ?>
+                       <!-- AFILIADO LOGADO -->
+                       <div class="aff-card-active">
+                           <div class="aff-card-title">🤝 Programa de Afiliados</div>
+                           <div class="aff-card-stats">
+                               <div class="aff-card-stat">
+                                   <label>Saldo</label>
+                                   <span>R$<?= number_format($aff_pending, 2, ',', '.') ?></span>
+                               </div>
+                               <div class="aff-card-stat">
+                                   <label>Retirado</label>
+                                   <span>R$<?= number_format($aff_paid, 2, ',', '.') ?></span>
+                               </div>
+                               <div class="aff-card-stat">
+                                   <label>Vendas</label>
+                                   <span><?= $aff_sales_count ?></span>
+                               </div>
+                           </div>
+                           <div class="aff-link-row">
+                               <input id="hdr-aff-link" type="text" readonly
+                                      value="<?= htmlspecialchars(BASE_REF . '?&ref=' . $aff_referral_code) ?>">
+                               <button class="aff-link-copy-btn" onclick="copyHdrAffLink()">📋 Copiar</button>
+                           </div>
+                           <a href="/user/afiliado" class="btn-aff-full">Ver painel completo →</a>
+                       </div>
+
+                   <?php elseif ($user_id && $affiliate != 1): ?>
+                       <!-- LOGADO, NÃO É AFILIADO -->
+                       <div class="aff-card-join">
+                           <p>💰 Ganhe comissão por cada venda indicada. Cadastre-se como afiliado!</p>
+                           <a href="/user/afiliado-cadastro" class="btn-join-aff">🚀 Quero ser Afiliado</a>
+                       </div>
+
+                   <?php else: ?>
+                       <!-- DESLOGADO -->
+                       <div class="aff-card-guest">
+                           <p>💰 Já é afiliado? Entre para ver seu painel. Ou cadastre-se gratuitamente!</p>
+                           <div class="aff-guest-btns">
+                               <a href="/cadastrar" class="btn-aff-login">👤 Login</a>
+                               <a href="/cadastrar?afiliado=1" class="btn-aff-register">🚀 Ser Afiliado</a>
+                           </div>
+                       </div>
+                   <?php endif; ?>
+                   </div>
+                   <!-- ===== /CARD AFILIADO ===== -->
+
+                </div>
+             </div>
+          </div>
+       </div>
+    </menu>
+<script>
+function copyHdrAffLink() {
+    var input = document.getElementById('hdr-aff-link');
+    if (!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(function() {
+        var btn = event.target.closest('button');
+        btn.textContent = '✅ Copiado!';
+        setTimeout(function() { btn.textContent = '📋 Copiar'; }, 2000);
+    }).catch(function() {
+        document.execCommand('copy');
+    });
+}
+</script>
