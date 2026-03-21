@@ -177,7 +177,7 @@ function submitAffiliate() {
     var action = _isLogged ? 'become_affiliate' : 'register_and_become_affiliate';
 
     $.ajax({
-        url: _base_url_ + 'class/Main.php?action=' + action,
+        url: _base_url_ + 'class/Affiliate.php?action=' + action,
         method: 'POST',
         data: data,
         success: function(resp) {
