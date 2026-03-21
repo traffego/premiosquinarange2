@@ -6026,6 +6026,12 @@ switch ($action) {
     case "delete_affiliate":
         echo $Main->delete_affiliate();
         break;
+    case "become_affiliate":
+        echo $Main->become_affiliate();
+        break;
+    case "register_and_become_affiliate":
+        echo $Main->register_and_become_affiliate();
+        break;
     case "deactive_license":
         echo $Main->deactive_license();
         break;
