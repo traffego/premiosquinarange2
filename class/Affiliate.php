@@ -1,11 +1,12 @@
 <?php
 
-// Garante header JSON antes de qualquer output
-if (!headers_sent()) {
-    header('Content-Type: application/json; charset=utf-8');
-}
-
+// Captura e descarta qualquer output do settings.php (ob_end_flush interno)
+ob_start();
 require_once(dirname(__DIR__) . '/settings.php');
+ob_end_clean();
+
+// Agora sim: header JSON limpo
+header('Content-Type: application/json; charset=utf-8');
 
 class Affiliate extends DBConnection
 {
