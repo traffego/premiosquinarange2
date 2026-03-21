@@ -187,6 +187,8 @@ if (isset($parts['query'])) {
                         <?php if ($user_id): ?>
                            <?php if ($affiliate == 1): ?>
                               <li><a class="text-white" alt="Área do Afiliado" href="/user/afiliado"><i class="icone bi bi-share"></i><span>Afiliados</span></a></li>
+                           <?php else: ?>
+                              <li><a class="text-white" alt="Quero ser Afiliado" href="/user/afiliado-cadastro"><i class="icone bi bi-person-plus-fill"></i><span>Quero ser Afiliado</span></a></li>
                            <?php endif; ?>
                            <!-- <li><a alt="Atualizar cadastro" class="text-white" href="/perfil"><i class="icone bi bi-person"></i><span>Perfil</span></a></li> -->
                         <?php else: ?>

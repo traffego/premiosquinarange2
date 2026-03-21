@@ -1104,6 +1104,37 @@ class Main extends DBConnection
         return json_encode($resp);
     }
 
+    public function become_affiliate()
+    {
+        $customer_id = $this->settings->userdata('id');
+        if (!$customer_id) {
+            return json_encode(['status' => 'failed', 'msg' => 'Não autorizado.']);
+        }
+
+        // Verifica se já é afiliado
+        $check = $this->conn->query("SELECT id FROM referral WHERE customer_id = '$customer_id' LIMIT 1");
+        if ($check && $check->num_rows > 0) {
+            return json_encode(['status' => 'failed', 'msg' => 'Você já possui uma conta de afiliado.']);
+        }
+
+        $percentage = 50;
+        $status     = 1;
+
+        $insert = $this->conn->query(
+            "INSERT INTO referral (status, referral_code, percentage, amount_paid, amount_pending, customer_id)
+             VALUES ($status, $customer_id, $percentage, 0, 0, $customer_id)"
+        );
+
+        if ($insert) {
+            $this->conn->query(
+                "UPDATE customer_list SET is_affiliate = 1 WHERE id = '$customer_id'"
+            );
+            return json_encode(['status' => 'success', 'msg' => 'Cadastro como afiliado realizado com sucesso!']);
+        }
+
+        return json_encode(['status' => 'failed', 'msg' => 'Erro ao cadastrar. Tente novamente.']);
+    }
+
     public function create_affiliate()
     {
         if (!$this->settings->userdata("firstname")) {

@@ -12,7 +12,19 @@ if ($_settings->chk_flashdata('success')) {
 }
 
 echo "\r\n";
-$page = (isset($_GET['p']) ? $_GET['p'] : 'pages/home');
+
+// Mapeamento de URLs amigáveis para páginas internas
+$uri = strtok($_SERVER['REQUEST_URI'], '?');
+$friendly_routes = [
+    '/user/afiliado'          => 'pages/affiliate',
+    '/user/afiliado-cadastro' => 'pages/affiliate-request',
+];
+if (isset($friendly_routes[$uri])) {
+    $page = $friendly_routes[$uri];
+} else {
+    $page = (isset($_GET['p']) ? $_GET['p'] : 'pages/home');
+}
+
 if (!file_exists($page . '.php') && !is_dir($page)) {
 	include '404.php';
 }
