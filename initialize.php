@@ -17,11 +17,11 @@ if ($date_expirate == date('Y-m-d')) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(1);
-    if (!defined('BASE_URL')) define('BASE_URL', 'https://premiosquina.com/');
+    if (!defined('BASE_URL')) define('BASE_URL', 'https://rua.premiosquina.com/');
     
-    if (!defined('BASE_REF')) define('BASE_REF', 'https://premiosquina.com');
+    if (!defined('BASE_REF')) define('BASE_REF', 'https://rua.premiosquina.com');
     
-    if (!defined('base_url')) define('base_url', 'https://premiosquina.com/');
+    if (!defined('base_url')) define('base_url', 'https://rua.premiosquina.com/');
     
     if (!defined('base_app')) define('base_app', str_replace('\\', '/', __DIR__) . '/');
 
